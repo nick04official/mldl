@@ -42,7 +42,7 @@ class AttentionModel(nn.Module):
             if self.noCam:
                 state = self.lstm_cell(feature_convNBN, state)
             else:
-                state = self.lstm_cell(attentionFeat)
+                state = self.lstm_cell(attentionFeat, state )
             
         feats1 = self.avgpool(state[1]).view(state[1].size(0), -1)
         feats = self.classifier(feats1)
