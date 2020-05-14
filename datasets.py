@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from PIL import Image
 
-from spatial_transforms import Scale
+from spatial_transforms import Compose, Scale
 
 def load_image_PIL(path):
     with open(path, 'rb') as f:
@@ -21,7 +21,7 @@ class DatasetRGB(Dataset):
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
 
-        scale = Scale(scale_to)
+        scale = Compose([Scale(scale_to)])
 
         self.root_dir = root_dir
         self.spatial_transform = spatial_transform
@@ -39,22 +39,22 @@ class DatasetRGB(Dataset):
                 for scene in json_dataset[subject][label_name]:
                     
                     if len(scene) >= self.minLen:
-                        scene = []
+                        frames = []
                         for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
                             pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]))
                             pil_image = scale(pil_image)
                             if self.device == 'cpu':
                                 # Do not apply transformations, save as PIL on the CPU RAM
-                                scene.append(pil_image)
+                                frames.append(pil_image)
                             elif self.device == 'cuda':
                                 # Apply transformations and convert to tensor
                                 # to be later transferred to GPU VRAM
-                                scene.append(self.spatial_transform(pil_image))
+                                frames.append(self.spatial_transform(pil_image))
                         
                         if self.device == 'cpu':
-                            self.scenes.append(scene)
+                            self.scenes.append(frames)
                         elif self.device == 'cuda':
-                            self.scenes.append(torch.stack(scene, 0).to('cuda:0'))
+                            self.scenes.append(torch.stack(frames, 0).to('cuda:0'))
 
                         label_id = None
                         try:
