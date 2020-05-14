@@ -39,7 +39,7 @@ class AttentionModel(nn.Module):
             attentionMAP = attentionMAP.view(attentionMAP.size(0), 1, 7, 7)
             attentionFeat = feature_convNBN * attentionMAP.expand_as(feature_conv)
 
-            if noCam:
+            if self.noCam:
                 state = self.lstm_cell(feature_convNBN, state)
             else:
                 state = self.lstm_cell(attentionFeat)
