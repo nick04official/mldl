@@ -8,7 +8,9 @@ from models.conv_lstm import ConvLSTM
 from models.resnet import resnet34
 
 class AttentionModel(nn.Module):
+
     def __init__(self, num_classes=61, mem_size=512, noCam=False):
+
         super(AttentionModel, self).__init__()
 
         self.num_classes = num_classes
