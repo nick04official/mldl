@@ -40,7 +40,7 @@ class AttentionModel(nn.Module):
         super().train(mode == True)
 
         self.resnet.train(mode)
-        self.lstm_cell(mode)
+        self.lstm_cell.train(mode)
         if mode != False:
             self.classifier.train(True)
 
