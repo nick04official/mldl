@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 
 from models.conv_lstm import ConvLSTM
-from models.resnet import resnet34
+from models.resnet.resnet import resnet34
 
 class AttentionModel(nn.Module):
 
@@ -14,15 +14,55 @@ class AttentionModel(nn.Module):
         super(AttentionModel, self).__init__()
 
         self.num_classes = num_classes
-        self.resnet = resnet34(pretrained=True, noBN=True)
+        self.noCam = noCam
         self.mem_size = mem_size
+
+        self.resnet = resnet34(pretrained=True, noBN=True)
         self.weight_softmax = self.resnet.fc.weight
         self.lstm_cell = ConvLSTM(512, mem_size)
         self.avgpool = nn.AvgPool2d(7)
         self.dropout = nn.Dropout(0.7)
         self.fc = nn.Linear(mem_size, self.num_classes)
         self.classifier = nn.Sequential(self.dropout, self.fc)
-        self.noCam = noCam 
+
+        self._custom_train_mode = True
+    
+
+    def train(self, mode=True):
+        correct_values = {True, 'stage2', 'stage1', False}
+        
+        if mode not in correct_values:
+            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+
+        self._custom_train_mode = mode
+        
+        # Fai fare il training completo solo se mode == True
+        super().train(mode == True)
+
+        self.resnet.train(mode)
+        self.lstm_cell(mode)
+        if mode != False:
+            self.classifier.train(True)
+
+    def get_training_parameters(self):
+        train_params = []
+
+        # Prima levo i gradienti a tutti, e poi li aggiungo solo a quelli
+        # su cui faccio il training
+        for params in self.parameters():
+            params.requires_grad = False
+
+        # è responsabilità della funzione negli oggetti aggiungere i gradienti
+        train_params += self.resnet.get_training_parameters()
+        train_params += self.lstm_cell.get_training_parameters()
+        # trainiamo l'ultimo layer a tutti gli stagi, eccetto se non sono in training
+        if self._custom_train_mode != False:
+            for params in self.classifier.parameters():
+                params.requires_grad = True
+                train_params += [params]
+
+        return train_params
+
 
     def forward(self, inputVariable):
         state = (Variable(torch.zeros((inputVariable.size(1), self.mem_size, 7, 7)).cuda()),

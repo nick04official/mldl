@@ -45,6 +45,30 @@ class ConvLSTM(nn.Module):
         torch.nn.init.constant_(self.conv_o_xx.bias, 0)
         torch.nn.init.xavier_normal_(self.conv_o_hh.weight)
 
+        self._custom_train_mode = True
+
+
+    def train(self, mode=True):
+        correct_values = {True, 'stage2', 'stage1', False}
+        
+        if mode not in correct_values:
+            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+
+        self._custom_train_mode = mode
+        
+        # Fai fare il training completo a tutti gli stage eccetto quando False
+        super().train(mode != False)
+
+    def get_training_parameters(self):
+        train_params = []
+
+        if self._custom_train_mode != False:
+            for params in self.parameters():
+                params.requires_grad = True
+                train_params += [params]
+        
+        return train_params
+
     def forward(self, x, state):
         if state is None:
             state = (Variable(torch.randn(x.size(0), x.size(1), x.size(2), x.size(3)).cuda()),
