@@ -78,6 +78,8 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+         self._custom_train_mode = False
+
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -94,6 +96,35 @@ class ResNet(nn.Module):
             layers.append(block(self.inplanes, planes))
 
         return nn.Sequential(*layers)
+
+    def train(self, mode=True):
+        correct_values = {True, 'layer4', False}
+        
+        if mode not in correct_values:
+            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+
+        self._custom_train_mode = mode
+
+        super().train(mode == True)
+
+        if self._custom_train_mode == 'layer4':
+            self.layer4.train(True)
+
+    def get_training_parameters(self):
+        train_params = []
+
+        if self._custom_train_mode == 'layer4':
+            for params in self.layer4.parameters():
+                params.requires_grad = True
+                train_params += [params]
+        elif self._custom_train_mode == True:
+            for params in self.parameters():
+                params.requires_grad = True
+                train_params += [params]
+
+        return train_params
+        
+        
 
     def forward(self, x):
         x = self.conv1(x)

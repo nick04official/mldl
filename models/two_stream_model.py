@@ -20,6 +20,41 @@ class twoStreamAttentionModel(nn.Module):
         self.dropout = nn.Dropout(0.5)
         self.classifier = nn.Sequential(self.dropout, self.fc2)
 
+    def train(self, mode=True):
+        correct_values = {True, 'layer4', False}
+        
+        if mode not in correct_values:
+            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+
+        self._custom_train_mode = mode
+        
+        # Fai fare il training completo solo se mode == True
+        super().train(mode == True)
+
+        self.flowModel.train(mode)
+        # TODO: loro sembrano non farlo questo
+        self.frameModel.train('stage2' if mode == 'layer4' else mode)
+        if mode != False:
+            self.classifier.train(True)
+
+    def get_training_parameters(self):
+        train_params = []
+
+        # Prima levo i gradienti a tutti, e poi li aggiungo solo a quelli
+        # su cui faccio il training
+        for params in self.parameters():
+            params.requires_grad = False
+
+        # è responsabilità della funzione negli oggetti aggiungere i gradienti
+        train_params += self.flowModel.get_training_parameters()
+        train_params += self.frameModel.get_training_parameters()
+        if self._custom_train_mode != False:
+            for params in self.classifier.parameters():
+                params.requires_grad = True
+                train_params += [params]
+
+        return train_params
+
     def forward(self, inputVariableFlow, inputVariableFrame):
         _, flowFeats = self.flowModel(inputVariableFlow)
         _, rgbFeats = self.frameModel(inputVariableFrame)
