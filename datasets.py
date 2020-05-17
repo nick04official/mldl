@@ -43,7 +43,7 @@ class DatasetRGB(Dataset):
                     
                     if len(scene) >= self.minLen:
                         frames = []
-                        for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
+                        """for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
                             pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]))
                             pil_image = scale(pil_image)
                             if self.device == 'cpu':
@@ -52,8 +52,15 @@ class DatasetRGB(Dataset):
                             elif self.device == 'cuda':
                                 # Apply transformations and convert to tensor
                                 # to be later transferred to GPU VRAM
-                                frames.append(self.spatial_transform(pil_image))
-                        
+                                frames.append(self.spatial_transform(pil_image))"""
+
+                        for frame in scene:
+                            pil_image = load_image_PIL(os.path.join(root_dir, frame))
+                            pil_image = scale(pil_image)
+                            if self.device == 'cuda':
+                                pil_image = self.spatial_transform(pil_image)
+                            frames.append(pil_image)
+
                         if self.device == 'cpu':
                             self.scenes.append(frames)
                         elif self.device == 'cuda':
@@ -73,11 +80,14 @@ class DatasetRGB(Dataset):
     def __getitem__(self, idx):
         label = self.labels[idx]
 
+        selected_frame_indices = [int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)]
         if self.device == 'cpu':
             self.spatial_transform.randomize_parameters()
-            frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
+            frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
+            #frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
         elif self.device == 'cuda':
-            frames = self.scenes[idx]
+            frames = self.scenes[idx][selected_frame_indices]
+            #frames = self.scenes[idx]
         
         return frames, label
 
@@ -160,10 +170,10 @@ class DatasetRGBFlow(Dataset):
 
     def __init__(self, datasetRGB, datasetFlow):
 
-        if not isinstance(datasetRGB, DatasetRGB):
+        """if not isinstance(datasetRGB, DatasetRGB):
             raise ValueError('datasetRGB must be an instance of DatasetRGB')
         if not isinstance(datasetFlow, DatasetFlow):
-            raise ValueError('datasetFlow must be an instance of DatasetFlow')
+            raise ValueError('datasetFlow must be an instance of DatasetFlow')"""
 
         if not datasetRGB.label_ids == datasetFlow.label_ids:
             raise ValueError('Not the same labels among the two datasets')

@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 
 from models.resnet.flow_resnet import flow_resnet34
-from attention_model import AttentionModel
+from models.attention_model import AttentionModel
 
-class twoStreamAttentionModel(nn.Module):
+class TwoStreamAttentionModel(nn.Module):
     def __init__(self, flowModel='', frameModel='', stackSize=5, memSize=512, num_classes=61):
-        super(twoStreamAttentionModel, self).__init__()
+        super(TwoStreamAttentionModel, self).__init__()
 
         self.flowModel = flow_resnet34(False, channels=2*stackSize, num_classes=num_classes)
         if flowModel != '':
@@ -57,8 +57,8 @@ class twoStreamAttentionModel(nn.Module):
         return train_params, flow_train_params
 
     def forward(self, inputVariable):
-        inputVariableFlow, inputVariableFrame = inputVariable
+        inputVariableFrame, inputVariableFlow = inputVariable
         _, flowFeats = self.flowModel(inputVariableFlow)
         _, rgbFeats = self.frameModel(inputVariableFrame)
         twoStreamFeats = torch.cat((flowFeats, rgbFeats), 1)
-        return self.classifier(twoStreamFeats)
+        return self.classifier(twoStreamFeats), None

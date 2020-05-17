@@ -6,9 +6,6 @@ import numpy as np
 
 import torch.utils.model_zoo as model_zoo
 
-__all__ = ['ResNet', 'flow_resnet18', 'flow_resnet34', 'flow_resnet50', 'flow_resnet50_aux', 'flow_resnet101',
-           'flow_resnet152']
-
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
@@ -78,7 +75,7 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-         self._custom_train_mode = False
+        self._custom_train_mode = False
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -101,7 +98,7 @@ class ResNet(nn.Module):
         correct_values = {True, 'layer4', False}
         
         if mode not in correct_values:
-            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+            raise ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
 
         self._custom_train_mode = mode
 

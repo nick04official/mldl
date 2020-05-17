@@ -32,7 +32,7 @@ class AttentionModel(nn.Module):
         correct_values = {True, 'stage2', 'stage1', False}
         
         if mode not in correct_values:
-            return ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
+            raise ValueError('Invalid modes, correct values are: ' + ' '.join(correct_values))
 
         self._custom_train_mode = mode
         
