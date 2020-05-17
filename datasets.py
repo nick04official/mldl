@@ -155,3 +155,24 @@ class DatasetFlow(Dataset):
             sequences.append(torch.stack(sequence, 0).squeeze(1))
         # TODO: prendo solo la prima sequenza
         return sequences[0], label
+
+class DatasetRGBFlow(Dataset):
+
+    def __init__(self, datasetRGB, datasetFlow):
+
+        if not isinstance(datasetRGB, DatasetRGB):
+            raise ValueError('datasetRGB must be an instance of DatasetRGB')
+        if not isinstance(datasetFlow, DatasetFlow):
+            raise ValueError('datasetFlow must be an instance of DatasetFlow')
+
+        if not datasetRGB.label_ids == datasetFlow.label_ids:
+            raise ValueError('Not the same labels among the two datasets')
+
+        self.datasetRGB = datasetRGB
+        self.datasetFlow = datasetFlow
+
+    def __len__(self):
+        return len(self.datasetRGB)
+
+    def __getitem__(self, idx):
+        return (self.datasetRGB[idx][0], self.datasetFlow[idx][0], self.datasetRGB.labels[idx])
