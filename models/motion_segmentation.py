@@ -16,7 +16,7 @@ class MotionSegmentationBlock(nn.Module):
     def __init__(self, input_layers=512, output_layers=100, resolution=(7, 7)):
 
         self.convolution = conv3x3(input_layers, output_layers)
-
+        self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(resolution[0] * resolution[1] * output_layers, resolution[0] * resolution[1])
         self.classifier = nn.Sequential(self.dropout, self.fc)
@@ -27,6 +27,7 @@ class MotionSegmentationBlock(nn.Module):
         torch.nn.init.xavier_normal_(self.fc.bias)
 
     def get_training_parameters(self):
+        
         train_params = []
 
         if self.training:
@@ -39,6 +40,7 @@ class MotionSegmentationBlock(nn.Module):
     def forward(self, x):
 
         x = self.convolution(x)
+        x = self.relu(x)
         x = self.classifier(x)
 
         return x
