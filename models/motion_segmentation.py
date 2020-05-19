@@ -14,6 +14,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 class MotionSegmentationBlock(nn.Module):
 
     def __init__(self, input_layers=512, output_layers=100, resolution=(7, 7)):
+        super(MotionSegmentationBlock, self).__init__()
 
         self.convolution = conv3x3(input_layers, output_layers)
         self.relu = nn.ReLU(inplace=True)
@@ -22,9 +23,9 @@ class MotionSegmentationBlock(nn.Module):
         self.classifier = nn.Sequential(self.dropout, self.fc)
 
         torch.nn.init.xavier_normal_(self.convolution.weight)
-        torch.nn.init.xavier_normal_(self.convolution.bias)
+        #torch.nn.init.xavier_normal_(self.convolution.bias)
         torch.nn.init.xavier_normal_(self.fc.weight)
-        torch.nn.init.xavier_normal_(self.fc.bias)
+        #torch.nn.init.xavier_normal_(self.fc.bias)
 
     def get_training_parameters(self):
         
@@ -41,6 +42,9 @@ class MotionSegmentationBlock(nn.Module):
 
         x = self.convolution(x)
         x = self.relu(x)
+        
+        # flatten for fully connected layer
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
 
         return x

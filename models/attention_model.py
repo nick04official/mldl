@@ -78,13 +78,10 @@ class AttentionModel(nn.Module):
         
         ms_feats = None
         if self.enable_motion_segmentation:
-            ms_feats = Variable(torch.zeros(inputVariable.size(0), inputVariable.size(1), 49))
+            ms_feats = Variable(torch.zeros(inputVariable.size(0), inputVariable.size(1), 49).cuda())
 
         for t in range(inputVariable.size(0)):
             logit, feature_conv, feature_convNBN = self.resnet(inputVariable[t])
-
-            if self.enable_motion_segmentation:
-                ms_feats[t] = self.motion_segmentation(inputVariable[t])
 
             bz, nc, h, w = feature_conv.size()
             feature_conv1 = feature_conv.view(bz, nc, h*w)
@@ -94,6 +91,9 @@ class AttentionModel(nn.Module):
             attentionMAP = F.softmax(cam.squeeze(1), dim=1)
             attentionMAP = attentionMAP.view(attentionMAP.size(0), 1, 7, 7)
             attentionFeat = feature_convNBN * attentionMAP.expand_as(feature_conv)
+
+            if self.enable_motion_segmentation:
+                ms_feats[t] = self.motion_segmentation(feature_convNBN)
 
             if self.noCam:
                 state = self.lstm_cell(feature_convNBN, state)
