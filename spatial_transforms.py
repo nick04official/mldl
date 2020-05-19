@@ -89,6 +89,17 @@ class ToTensor(object):
         pass
 
 
+class Binarize(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, tensor, inv, flow):
+        return tensor.ceil()
+
+    def randomize_parameters(self):
+        pass
+
 class Normalize(object):
     """Normalize an tensor image with mean and standard deviation.
     Given mean: (R, G, B) and std: (R, G, B),
