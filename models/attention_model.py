@@ -44,7 +44,8 @@ class AttentionModel(nn.Module):
 
         self.resnet.train(mode)
         self.lstm_cell.train(mode)
-        if mode == 'stage2' or mode == True:
+        #if mode == 'stage2' or mode == True:
+        if mode != False:
            self.motion_segmentation.train(True) 
         if mode != False:
             self.classifier.train(True)
