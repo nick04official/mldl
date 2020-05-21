@@ -1,12 +1,17 @@
 import torch
 import torch.nn as nn
 
+import numpy as np
+import cv2
+
 from torch.nn import functional as F
 from torch.autograd import Variable
 
 from models.conv_lstm import ConvLSTM
 from models.resnet.resnet import resnet34
 from models.motion_segmentation import MotionSegmentationBlock
+
+from spatial_transforms import Compose, ToTensor, CenterCrop, Scale, Normalize
 
 class AttentionModel(nn.Module):
 
@@ -105,3 +110,50 @@ class AttentionModel(nn.Module):
         feats = self.classifier(feats1)
 
         return feats, ms_feats
+
+    def get_cam_visualisation(self, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
+        if preprocess_for_viz == None:
+            preprocess_for_viz = transforms.Compose([
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
+            ])
+        if preprocess_for_model == None:
+            normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+
+            preprocess_for_model = transforms.Compose([
+                transforms.Scale(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize
+            ])
+
+        tensor_image = preprocess_for_model(input_pil_image)
+        pil_image = preprocess_for_viz(input_pil_image)
+
+        logit, feature_conv, _ = self.resnet(tensor_image.unsqueeze(0).cuda())
+
+        bz, nc, h, w = feature_conv.size()
+        feature_conv = feature_conv.view(bz, nc, h*w)
+
+        h_x = F.softmax(logit, dim=1).data
+        probs, idx = h_x.sort(1, True)
+
+        cam_img = torch.bmm(self.weight_softmax[idx[:, 0]].unsqueeze(1), feature_conv).squeeze(1)
+        cam_img = F.softmax(cam_img, 1).data
+        cam_img = cam_img.cpu()
+        cam_img = cam_img.reshape(h, w)
+        cam_img = cam_img - torch.min(cam_img)
+        cam_img = cam_img / torch.max(cam_img)
+
+        cam_img = np.uint8(255 * cam_img)
+        img = np.uint8(pil_image)
+
+        output_cam = cv2.resize(cam_img, pil_image.size)
+        heatmap = cv2.applyColorMap(output_cam, cv2.COLORMAP_JET)
+        img = cv2.cvtColor(np.uint8(img), cv2.COLOR_RGB2BGR)
+        
+        result = heatmap * 0.4 + img * 0.6
+        result = cv2.cvtColor(np.uint8(result), cv2.COLOR_BGR2RGB)
+        
+        return Image.fromarray(result)

@@ -146,7 +146,9 @@ class ResNet(nn.Module):
                 params.requires_grad = True
                 train_params += [params]
         elif self._custom_train_mode == True:
-            return self.parameters()
+            for params in self.parameters():
+                params.requires_grad = True
+                train_params += [params]
 
         return train_params
 
