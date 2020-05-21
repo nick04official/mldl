@@ -12,6 +12,7 @@ from models.resnet.resnet import resnet34
 from models.motion_segmentation import MotionSegmentationBlock
 
 from spatial_transforms import Compose, ToTensor, CenterCrop, Scale, Normalize
+from PIL import Image
 
 class AttentionModel(nn.Module):
 
@@ -113,18 +114,18 @@ class AttentionModel(nn.Module):
 
     def get_cam_visualisation(self, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
         if preprocess_for_viz == None:
-            preprocess_for_viz = transforms.Compose([
-                transforms.Scale(256),
-                transforms.CenterCrop(224),
+            preprocess_for_viz = Compose([
+                Scale(256),
+                CenterCrop(224),
             ])
         if preprocess_for_model == None:
-            normalize = transforms.Normalize(
+            normalize = Normalize(
                 mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
 
-            preprocess_for_model = transforms.Compose([
-                transforms.Scale(256),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
+            preprocess_for_model = Compose([
+                Scale(256),
+                CenterCrop(224),
+                ToTensor(),
                 normalize
             ])
 
