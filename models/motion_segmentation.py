@@ -22,9 +22,9 @@ class MotionSegmentationBlock(nn.Module):
         self.fc = nn.Linear(resolution[0] * resolution[1] * output_layers, resolution[0] * resolution[1])
         self.classifier = nn.Sequential(self.dropout, self.fc)
 
-        #torch.nn.init.xavier_normal_(self.convolution.weight)
+        torch.nn.init.xavier_normal_(self.convolution.weight)
         #torch.nn.init.xavier_normal_(self.convolution.bias)
-        #torch.nn.init.xavier_normal_(self.fc.weight)
+        torch.nn.init.xavier_normal_(self.fc.weight)
         #torch.nn.init.xavier_normal_(self.fc.bias)
 
     def get_training_parameters(self):

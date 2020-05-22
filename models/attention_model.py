@@ -58,6 +58,7 @@ class AttentionModel(nn.Module):
 
     def get_training_parameters(self):
         train_params = []
+        train_params_ms = []
 
         # Prima levo i gradienti a tutti, e poi li aggiungo solo a quelli
         # su cui faccio il training
@@ -75,9 +76,9 @@ class AttentionModel(nn.Module):
             if self.enable_motion_segmentation:
                 for params in self.motion_segmentation.parameters():
                     params.requires_grad = True
-                    train_params += [params]
+                    train_params_ms += [params]
 
-        return train_params
+        return train_params, train_params_ms
 
     def forward(self, inputVariable):
         state = (Variable(torch.zeros((inputVariable.size(1), self.mem_size, 7, 7)).cuda()),
