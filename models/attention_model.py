@@ -50,8 +50,7 @@ class AttentionModel(nn.Module):
 
         self.resnet.train(mode)
         self.lstm_cell.train(mode)
-        #if mode == 'stage2' or mode == True:
-        if mode != False:
+        if mode == 'stage2' or mode == True:
            self.motion_segmentation.train(True) 
         if mode != False:
             self.classifier.train(True)
@@ -73,10 +72,8 @@ class AttentionModel(nn.Module):
             for params in self.classifier.parameters():
                 params.requires_grad = True
                 train_params += [params]
-            if self.enable_motion_segmentation:
-                for params in self.motion_segmentation.parameters():
-                    params.requires_grad = True
-                    train_params_ms += [params]
+
+        train_params_ms = self.motion_segmentation.get_training_parameters()
 
         return train_params, train_params_ms
 
@@ -86,7 +83,7 @@ class AttentionModel(nn.Module):
         
         ms_feats = None
         if self.enable_motion_segmentation:
-            ms_feats = Variable(torch.zeros(inputVariable.size(0), inputVariable.size(1), 49).cuda())
+            ms_feats = Variable(torch.zeros(inputVariable.size(0), inputVariable.size(1), 49 * 2).cuda())
 
         for t in range(inputVariable.size(0)):
             logit, feature_conv, feature_convNBN = self.resnet(inputVariable[t])
