@@ -16,7 +16,7 @@ def load_image_PIL(path, mode='RGB'):
 
 class DatasetRGB(Dataset):
 
-    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None):
+    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
@@ -26,6 +26,7 @@ class DatasetRGB(Dataset):
         self.seqLen = seqLen
         self.minLen = minLen
         self.device = device
+        self.enable_randomize_transform = enable_randomize_transform
 
         self.scenes = []
         self.labels = []
@@ -82,7 +83,8 @@ class DatasetRGB(Dataset):
 
         #selected_frame_indices = [int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)]
         if self.device == 'cpu':
-            self.spatial_transform.randomize_parameters()
+            if self.enable_randomize_transform:
+                self.spatial_transform.randomize_parameters()
             #frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
             frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
         elif self.device == 'cuda':
@@ -94,7 +96,7 @@ class DatasetRGB(Dataset):
 
 class DatasetMMAPS(Dataset):
 
-    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None):
+    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
@@ -104,6 +106,7 @@ class DatasetMMAPS(Dataset):
         self.seqLen = seqLen
         self.minLen = minLen
         self.device = device
+        self.enable_randomize_transform = enable_randomize_transform
 
         self.scenes = []
         self.labels = []
@@ -160,7 +163,8 @@ class DatasetMMAPS(Dataset):
 
         #selected_frame_indices = [int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)]
         if self.device == 'cpu':
-            self.spatial_transform.randomize_parameters()
+            if self.enable_randomize_transform:
+                self.spatial_transform.randomize_parameters()
             #frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
             frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
         elif self.device == 'cuda':
@@ -172,7 +176,7 @@ class DatasetMMAPS(Dataset):
 
 class DatasetFlow(Dataset):
 
-    def __init__(self, root_dir, json_dataset, spatial_transform=None, stack_size=5, sequence_mode='single_random', n_sequences=1, device='cpu', scale_to=256, label_ids=None):
+    def __init__(self, root_dir, json_dataset, spatial_transform=None, stack_size=5, sequence_mode='single_random', n_sequences=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
         if sequence_mode not in {'single_random', 'single_midtime', 'multiple'}:
             raise ValueError('Wrong sequence_mode')
@@ -183,6 +187,7 @@ class DatasetFlow(Dataset):
         self.stack_size = stack_size
         self.sequence_mode = sequence_mode
         self.n_sequences = n_sequences
+        self.enable_randomize_transform = enable_randomize_transform
 
         self.scenes = []
         self.labels = []
@@ -222,7 +227,8 @@ class DatasetFlow(Dataset):
         label = self.labels[idx]
         scene = self.scenes[idx]
 
-        self.spatial_transform.randomize_parameters()
+        if self.enable_randomize_transform:
+            self.spatial_transform.randomize_parameters()
 
         scene_len = len(scene['x'])
         
@@ -232,7 +238,7 @@ class DatasetFlow(Dataset):
         elif self.sequence_mode == 'single_midtime':
             first_frames = [ (scene_len - self.stack_size) // 2 ]
         elif self.sequence_mode == 'multiple':
-            first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences)
+            first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences).astype(int)
             
         sequences = []
         for first_frame in first_frames:
@@ -242,6 +248,8 @@ class DatasetFlow(Dataset):
                 sequence.append(self.spatial_transform(scene['y'][k], inv=False))
             sequences.append(torch.stack(sequence, 0).squeeze(1))
         # TODO: prendo solo la prima sequenza
+        if self.sequence_mode == 'multiple':
+            return torch.stack(sequences, 0), label
         return sequences[0], label
 
 class DatasetRGBFlow(Dataset):
@@ -258,6 +266,9 @@ class DatasetRGBFlow(Dataset):
 
         self.datasetRGB = datasetRGB
         self.datasetFlow = datasetFlow
+
+        if self.datasetFlow.enable_randomize_transform:
+            raise ValueError('Do not set enable_randomize_transform to True for the datasetFlow')
 
     def __len__(self):
         return len(self.datasetRGB)
@@ -280,6 +291,9 @@ class DatasetRGBMMAPS(Dataset):
 
         self.datasetRGB = datasetRGB
         self.datasetMMAPS = datasetMMAPS
+
+        if self.datasetMMAPS.enable_randomize_transform:
+            raise ValueError('Do not set enable_randomize_transform to True for the datasetMMAPS')
 
     def __len__(self):
         return len(self.datasetRGB)
