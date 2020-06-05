@@ -16,11 +16,11 @@ from PIL import Image
 
 class AttentionModel(nn.Module):
 
-    def __init__(self, num_classes=61, mem_size=512, noCam=False, enable_motion_segmentation=False):
+    def __init__(self, num_classes=61, mem_size=512, no_cam=False, enable_motion_segmentation=False):
         super(AttentionModel, self).__init__()
 
         self.num_classes = num_classes
-        self.noCam = noCam
+        self.noCam = no_cam
         self.mem_size = mem_size
         self.enable_motion_segmentation = enable_motion_segmentation
 
@@ -55,7 +55,7 @@ class AttentionModel(nn.Module):
         if mode != False:
             self.classifier.train(True)
 
-    def get_training_parameters(self):
+    def get_training_parameters(self, name='all'):
         train_params = []
         train_params_ms = []
 
@@ -75,7 +75,19 @@ class AttentionModel(nn.Module):
 
         train_params_ms = self.motion_segmentation.get_training_parameters()
 
-        return train_params, train_params_ms
+        if name == 'all':
+            return train_params + train_params_ms
+        elif name == 'main':
+            return train_params
+        elif name == 'ms':
+            return train_params_ms
+
+    def load_weights(self, file_path):
+        model_dict = torch.load(file_path)
+        if 'model_state_dict' in model_dict:
+            self.load_state_dict(model_dict['model_state_dict'])
+        else:
+            self.load_state_dict(model_dict)
 
     def forward(self, inputVariable):
         state = (Variable(torch.zeros((inputVariable.size(1), self.mem_size, 7, 7)).cuda()),
@@ -108,7 +120,7 @@ class AttentionModel(nn.Module):
         feats1 = self.avgpool(state[1]).view(state[1].size(0), -1)
         feats = self.classifier(feats1)
 
-        return feats, ms_feats
+        return {'classifications': feats, 'ms_feats': ms_feats, 'lstm_feats': feats1}
 
     def get_cam_visualisation(self, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
         if preprocess_for_viz == None:
