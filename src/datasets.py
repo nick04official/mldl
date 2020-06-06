@@ -178,7 +178,7 @@ class DatasetFlow(Dataset):
 
     def __init__(self, root_dir, json_dataset, spatial_transform=None, stack_size=5, sequence_mode='single_random', n_sequences=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
-        if sequence_mode not in {'single_random', 'single_midtime', 'multiple'}:
+        if sequence_mode not in {'single_random', 'single_midtime', 'multiple', 'multiple_jittered'}:
             raise ValueError('Wrong sequence_mode')
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
@@ -239,6 +239,13 @@ class DatasetFlow(Dataset):
             first_frames = [ (scene_len - self.stack_size) // 2 ]
         elif self.sequence_mode == 'multiple':
             first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences).astype(int)
+        elif self.sequence_mode == 'multiple_jittered':
+            first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences)
+            if len(first_frames > 2):
+                d = first_frames[1] - first_frames[0]
+                deltas = ((np.random.rand(len(first_frames) - 2) - .5) * d).astype(int)
+                first_frames = first_frames + np.array([0, *deltas, 0])
+            first_frames = first_frames.astype(int)
             
         sequences = []
         for first_frame in first_frames:
@@ -247,8 +254,7 @@ class DatasetFlow(Dataset):
                 sequence.append(self.spatial_transform(scene['x'][k], inv=True))
                 sequence.append(self.spatial_transform(scene['y'][k], inv=False))
             sequences.append(torch.stack(sequence, 0).squeeze(1))
-        # TODO: prendo solo la prima sequenza
-        if self.sequence_mode == 'multiple':
+        if self.sequence_mode == 'multiple' or self.sequence_mode == 'multiple_jittered':
             return torch.stack(sequences, 0), label
         return sequences[0], label
 

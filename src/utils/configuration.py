@@ -1,11 +1,11 @@
-# pylint: disable=eval-used
+# pylint: disable=eval-used,unused-import
 
 from configparser import ConfigParser 
 
 from sklearn.model_selection import ParameterGrid
 
 from torch.optim import SGD, Adam
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import MultiStepLR, StepLR
 
 from models.attention_model import AttentionModel
 from models.two_stream_model import TwoStreamAttentionModel

@@ -87,4 +87,4 @@ class TwoStreamAttentionModel(nn.Module):
         rgb_feats = out_rgb['lstm_feats']
 
         twoStreamFeats = torch.cat((flow_feats, rgb_feats), 1)
-        return self.classifier(twoStreamFeats)
+        return {'classifications': self.classifier(twoStreamFeats)}

@@ -48,6 +48,44 @@ def forward_rgb(model, batch, loss_fn):
 
     return loss_values, n_elements, n_corrects
 
+def forward_flow(model, batch, loss_fn):
+    flow_input, label = batch
+
+    inputVariable = Variable(flow_input.cuda())
+    labelVariable = Variable(label.cuda())
+
+    output = model(inputVariable)
+
+    output_label = output['classifications']
+
+    loss_values = loss_fn(output_label, labelVariable)
+    
+    n_elements = int(len(labelVariable))
+
+    _, predicted = torch.max(output_label.data, 1)
+    n_corrects = int((predicted == labelVariable).sum())
+
+    return loss_values, n_elements, n_corrects
+
+def forward_rgbflow(model, batch, loss_fn):
+    rgb_input, flow_input, label = batch
+
+    frameVariable = Variable(rgb_input.permute(1, 0, 2, 3, 4).cuda())
+    flowVariable = Variable(flow_input.cuda())
+    labelVariable = Variable(label.cuda())
+
+    output = model((frameVariable, flowVariable))
+
+    output_label = output['classifications']
+
+    loss_values = loss_fn(output_label, labelVariable)
+    
+    n_elements = int(len(labelVariable))
+
+    _, predicted = torch.max(output_label.data, 1)
+    n_corrects = int((predicted == labelVariable).sum())
+
+    return loss_values, n_elements, n_corrects
 
 @torch.no_grad()
 def get_loss_accuracy(model, set_loader, forward_fn, loss_fn):
