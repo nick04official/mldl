@@ -37,9 +37,10 @@ class TwoStreamAttentionModel(nn.Module):
         if mode != False:
             self.classifier.train(True)
 
-    def get_training_parameters(self):
-        train_params = []
+    def get_training_parameters(self, name = 'all'):
+        rgb_train_params = []
         flow_train_params = []
+        train_params = []
 
         # Prima levo i gradienti a tutti, e poi li aggiungo solo a quelli
         # su cui faccio il training
@@ -48,17 +49,42 @@ class TwoStreamAttentionModel(nn.Module):
 
         # è responsabilità della funzione negli oggetti aggiungere i gradienti
         flow_train_params += self.flowModel.get_training_parameters()
-        train_params += self.frameModel.get_training_parameters()
+        rgb_train_params += self.frameModel.get_training_parameters()
         if self._custom_train_mode != False:
             for params in self.classifier.parameters():
                 params.requires_grad = True
                 train_params += [params]
+        if name == 'all':
+            return train_params + rgb_train_params + flow_train_params
+        elif name == 'rgb':
+            return rgb_train_params
+        elif name == 'flow':
+            return flow_train_params
+        elif name == 'fc':
+            return train_params
 
-        return train_params, flow_train_params
+    def _load_weights_path(self, model, file_path):
+        model_dict = torch.load(file_path)
+        if 'model_state_dict' in model_dict:
+            model.load_state_dict(model_dict['model_state_dict'])
+        else:
+            model.load_state_dict(model_dict)
+
+    def load_weights(self, file_path):
+        if type(file_path) == dict:
+            self._load_weights_path(self.frameModel, file_path['rgb'])
+            self._load_weights_path(self.flowModel, file_path['flow'])
+        else:
+            self._load_weights_path(self, file_path)
+        
 
     def forward(self, inputVariable):
         inputVariableFrame, inputVariableFlow = inputVariable
-        _, flowFeats = self.flowModel(inputVariableFlow)
-        _, rgbFeats = self.frameModel(inputVariableFrame)
-        twoStreamFeats = torch.cat((flowFeats, rgbFeats), 1)
-        return self.classifier(twoStreamFeats), None
+        out_flow = self.flowModel(inputVariableFlow)
+        out_rgb = self.frameModel(inputVariableFrame)
+
+        flow_feats = out_flow['conv_feats']
+        rgb_feats = out_rgb['lstm_feats']
+
+        twoStreamFeats = torch.cat((flow_feats, rgb_feats), 1)
+        return self.classifier(twoStreamFeats)

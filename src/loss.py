@@ -2,8 +2,9 @@ import torch, torch.nn
 
 class MSClassificationLoss(torch.nn.Module):
     
-    def __init__(self):
+    def __init__(self, alpha=1):
         super(MSClassificationLoss, self).__init__()
+        self.alpha = alpha
         
     def forward(self, pred_label, y_label, pred_mmap, y_mmap):
         # Loss di ciascun sample
@@ -26,15 +27,16 @@ class MSClassificationLoss(torch.nn.Module):
         y_mmap = y_mmap.view(y_mmap.size(0), -1)
 
         for i in range(pred_mmap.size(0)):
-            losses[i] += ce(pred_mmap[i], y_mmap[i].long())
+            losses[i] += self.alpha * ce(pred_mmap[i], y_mmap[i].long())
 
         return losses
 
 
 class MSRegressionClassificationLoss(torch.nn.Module):
     
-    def __init__(self):
+    def __init__(self, alpha=1):
         super(MSRegressionClassificationLoss, self).__init__()
+        self.alpha = alpha
         
     def forward(self, pred_label, y_label, pred_mmap, y_mmap):
         # Loss di ciascun sample
@@ -60,7 +62,7 @@ class MSRegressionClassificationLoss(torch.nn.Module):
         y_mmap = y_mmap.view(y_mmap.size(0), -1)
 
         for i in range(pred_mmap.size(0)):
-            losses[i] += regression_loss(pred_mmap[i], y_mmap[i].float())
+            losses[i] += self.alpha * regression_loss(pred_mmap[i], y_mmap[i].float())
 
         return losses
 
