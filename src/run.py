@@ -94,16 +94,16 @@ def main(configs):
 
         forward_fn = forward_rgbmmaps
     elif configs.dataset == 'DatasetFlow':
-        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_random')
-        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_midtime')
+        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_random')
+        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_midtime')
 
         dataset_train = dataset_flow_train
         dataset_valid = dataset_flow_valid
 
         forward_fn = forward_flow
     elif configs.dataset == 'DatasetFlowMultiple':
-        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple_jittered')
-        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple')
+        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple_jittered')
+        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple')
 
         dataset_train = dataset_flow_train
         dataset_valid = dataset_flow_valid
@@ -112,8 +112,8 @@ def main(configs):
     elif configs.dataset == 'DatasetRGBFlow':
         dataset_rgb_train = DatasetRGB(configs.dataset_folder, dataset_rgb_train_json, spatial_transform=train_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
         dataset_rgb_valid = DatasetRGB(configs.dataset_folder, dataset_rgb_valid_json, spatial_transform=valid_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
-        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_random', enable_randomize_transform=False)
-        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_midtime', enable_randomize_transform=False)
+        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_random', enable_randomize_transform=False)
+        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_midtime', enable_randomize_transform=False)
 
         dataset_rgbflow_train = DatasetRGBFlow(dataset_rgb_train, dataset_mmaps_train)
         dataset_rgbflow_valid = DatasetRGBFlow(dataset_rgb_valid, dataset_mmaps_valid)

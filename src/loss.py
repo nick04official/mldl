@@ -31,7 +31,7 @@ class MSClassificationLoss(torch.nn.Module):
 
         return losses
 
-
+# TODO: fixare batch size
 class MSRegressionClassificationLoss(torch.nn.Module):
     
     def __init__(self, alpha=1):
