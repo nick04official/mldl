@@ -114,6 +114,9 @@ class ResNet(nn.Module):
             for params in self.layer4.parameters():
                 params.requires_grad = True
                 train_params += [params]
+            for params in self.fc_action.parameters():
+                params.requires_grad = True
+                train_params += [params]
         elif self._custom_train_mode == True:
             for params in self.parameters():
                 params.requires_grad = True
@@ -121,7 +124,12 @@ class ResNet(nn.Module):
 
         return train_params
         
-        
+    def load_weights(self, file_path):
+        model_dict = torch.load(file_path)
+        if 'model_state_dict' in model_dict:
+            self.load_state_dict(model_dict['model_state_dict'])
+        else:
+            self.load_state_dict(model_dict)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -138,7 +146,7 @@ class ResNet(nn.Module):
         x1 = x.view(x.size(0), -1)
         x = self.dp(x1)
         x = self.fc_action(x)
-        return x, x1
+        return {'classifications': x, 'conv_feats': x1}
 
 def change_key_names(old_params, in_channels):
     new_params = collections.OrderedDict()
