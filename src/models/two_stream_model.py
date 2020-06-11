@@ -5,16 +5,12 @@ from models.resnet.flow_resnet import flow_resnet34
 from models.attention_model import AttentionModel
 
 class TwoStreamAttentionModel(nn.Module):
-    def __init__(self, flowModel='', frameModel='', stackSize=5, memSize=512, num_classes=61):
+    def __init__(self, stack_size=5, mem_size=512, num_classes=61, no_cam=False, enable_motion_segmentation=False, flow_resnet_pretrained=False):
         super(TwoStreamAttentionModel, self).__init__()
 
-        self.flowModel = flow_resnet34(False, channels=2*stackSize, num_classes=num_classes)
-        if flowModel != '':
-            self.flowModel.load_state_dict(torch.load(flowModel))
+        self.flowModel = flow_resnet34(flow_resnet_pretrained, channels=2 * stack_size, num_classes=num_classes)
         
-        self.frameModel = AttentionModel(num_classes, memSize)
-        if frameModel != '':
-            self.frameModel.load_state_dict(torch.load(frameModel))
+        self.frameModel = AttentionModel(num_classes, mem_size, no_cam, enable_motion_segmentation)
         
         self.fc2 = nn.Linear(512 * 2, num_classes, bias=True)
         self.dropout = nn.Dropout(0.5)

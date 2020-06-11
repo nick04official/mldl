@@ -115,8 +115,8 @@ def main(configs):
         dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_random', enable_randomize_transform=False)
         dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='single_midtime', enable_randomize_transform=False)
 
-        dataset_rgbflow_train = DatasetRGBFlow(dataset_rgb_train, dataset_mmaps_train)
-        dataset_rgbflow_valid = DatasetRGBFlow(dataset_rgb_valid, dataset_mmaps_valid)
+        dataset_rgbflow_train = DatasetRGBFlow(dataset_rgb_train, dataset_flow_train)
+        dataset_rgbflow_valid = DatasetRGBFlow(dataset_rgb_valid, dataset_flow_valid)
 
         dataset_train = dataset_rgbflow_train
         dataset_valid = dataset_rgbflow_valid
