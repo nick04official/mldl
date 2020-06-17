@@ -14,17 +14,20 @@
 \usepackage{epsfig,graphicx}
 \usepackage{amsmath,amssymb}
 
+\usepackage{enumitem}
+\setlist{nosep}
+
 % Include other packages here, before hyperref.
 
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
 % run, let it finish, and you should be clear).
-\usepackage[breaklinks=true,bookmarks=false]{hyperref}
+\usepackage[breaklinks=true,bookmarks=false,hidelinks=true]{hyperref}
 
-\cvprfinalcopy % *** Uncomment this line for the final submission
+\cvprfinalcopy
 
-\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
-\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+%\def\cvprPaperID{****} % *** Enter the CVPR Paper ID here
+%\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
 
 \setcounter{page}{1}
 \begin{document}
@@ -72,7 +75,7 @@ Then, on top of these two trained networks, a linear classifier is used to deter
 
 The main disadvantage of this two stream approach is that motion informations and appearance informations are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
 
-There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{self-supervision-mstask} where a motion segmentation task is deployed.
+There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{planamente2020joint} where a motion segmentation task is deployed.
 
 \subsection{Attention model}
 One milestone for the development of a working solution for recognising the involved action is the acknowledgement of the important role played by the motion of the hands and the appearance of the objects in the scene. So, focusing the attention on the most important region of a frame of a video, while at the same time discarding irrelevant informations, is a key component for getting a great performance gain in terms of accuracy. For this reason, in \cite{Ego-RNN} an attention mechanism is employed in the RGB network in order to extract features with spatial attention.
@@ -81,16 +84,34 @@ To extract features with spatial attention, \textit{class activation maps} (CAMs
 
 So, the features with spatial attention are obtained by performing the Hadamard product between the output feature maps of the very last convolutional layer of the backbone and the output of the softmax operation applied to the CAM of the class with the highest probability.
 
-The limit of the attention mechanism is that it almost completely discard any motion information but it only focuses on the appearance of each single frame. So, despite the deployment of the attention mechanism, in \cite{self-supervision-mstask} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
+The limit of the attention mechanism is that it almost completely discard any motion information but it only focuses on the appearance of each single frame. So, despite the deployment of the attention mechanism, in \cite{planamente2020joint} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
 
 \subsection{Motion segmentation task}
 The main idea behind this procedure is the addition of an auxiliary task: given an architecture where first a convolutional neural network extracts feature embeddings from RGB frames and then a ConvLSTM models temporal and infra-spatial correlations of such features, a second task is added to the output of the convolutional neural network with the intention of helping this shared backbone to extract more meaningful features and taking motion into account as well.
 
-In \cite{self-supervision-mstask}, a motion segmentation task is proposed. To do so, an \textit{improved dense trajectory} (IDT) is associated to each frame; basically, an IDT is a binary map that compensates for camera motion and that, for each pixel, states whether a moving keypoint is present or not. This motion map is used as a ground truth for a motion segmentation task: the output feature maps of the last convolutional layer of the shared backbone are forwarded to a second branch where they are first processed by a convolutional layer and then forwarded to a fully connected layer. This auxiliary task aims to minimise the pixel-by-pixel cross entropy loss between the predicted motion map and the ground truth. Both auxiliary task and main task tasks are trained together, because the role of the auxiliary task is to help the shared backbone to extract better features so that they take into account motion as well: for this reason, the losses of the auxiliary task and the main task are summed together during training.
+In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so, an \textit{improved dense trajectory} (IDT) is associated to each frame; basically, an IDT is a binary map that compensates for camera motion and that, for each pixel, states whether a moving keypoint is present or not. This motion map is used as a ground truth for a motion segmentation task: the output feature maps of the last convolutional layer of the shared backbone are forwarded to a second branch where they are first processed by a convolutional layer and then forwarded to a fully connected layer. This auxiliary task aims to minimise the pixel-by-pixel cross entropy loss between the predicted motion map and the ground truth. Both auxiliary task and main task tasks are trained together, because the role of the auxiliary task is to help the shared backbone to extract better features so that they take into account motion as well: for this reason, the losses of the auxiliary task and the main task are summed together during training.
 
 
 \section{Proposed method}
-Our method is based on the fact that the employment of optical flow has been proved to be effective to capture and encode various motion cues
+Our method is based on the fact that the employment of optical flow has been proved to be effective to capture and encode motion cues for moving objects. In this work, the warp flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
+
+Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Our method aims to extract RGB frames from warp flow frames: the generated RGB frames can then be fed to an RGB network in order to classify the sample.
+
+So, the employed method can be decomposed into two macro steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
+\begin{enumerate}
+	\item A convolutional neural network, which will be referred to as WfcNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
+	\item Using WfcNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in two backbones, one fed with generated RGB frames and the other with the original RGB frames, and whose output features are concatenated and fed to the ConvLSTM.
+\end{enumerate}
+
+\subsection{WfcNet}
+WfcNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure allows for better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
+
+WfcNet is made of basic blocks: each block has got two convolutional layers, one ReLu between them, batch normalisation at the output of each convolutional
+layer, and a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
+As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the input is done using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt while at the same time the advantages of the residual block are preserved.
+The upsampling of the input is performed instead applying a simple nearest neighbour resizing followed by a convolution filter with a stride of 1 and kernel size of 1.
+
+
 
 \section{Experimental results}
 
