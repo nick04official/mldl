@@ -55,7 +55,7 @@ S277910\\
 
 One of the main challenges in the field of Computer Vision and Artificial Intelligence lies in the recognition of the actions included inside a video. Until now, the research has been concentrated on the data provided by specific kinds of cameras, used in particular ares and in particular places, which capture the alternating of the everyday life from an external narrator point of view, i.e in third person.
 
-A lot of areas are interested to a classification based on first person videos. Among them, the robotic applications could be surely cited, starting from the definition of the androids’ intelligence like iCub\textsuperscript{\textcopyright} to the autonomous driving, together with the surveillance, the composition of the people’s behavioral profile, in order to predict and then to prevent potential offenses, the analysis of the users’ content informations to allow a tracking of their preferences loyalizing their experience inside the service etc.
+A lot of areas are interested in a classification based on first person videos. Among them, the robotic applications could be surely cited, starting from the definition of the androids’ intelligence like iCub\textsuperscript{\textcopyright} to the autonomous driving, together with the surveillance, the composition of the people’s behavioral profile, in order to predict and then to prevent potential offenses, the analysis of the users’ content informations to allow a tracking of their preferences loyalizing their experience inside the service etc.
 
 The datasets which contains these informations, until now, are very small but, in the future with the growing increase of the sale of wearable devices, with the undeterred increment of the ease to have at our disposal a camera and with the exponential growth of the number of photos and videos taken every day in all over the world, this limit could be easily surpassed. 
 
@@ -93,25 +93,37 @@ In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so,
 
 
 \section{Proposed method}
-Our method is based on the fact that the employment of optical flow has been proved to be effective to capture and encode motion cues for moving objects. In this work, the warp flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
+Our method is based on the fact that the employment of optical flow has been proved to be effective to capture and encode motion cues from moving objects. In this work, the warp flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
 
 Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Our method aims to extract RGB frames from warp flow frames: the generated RGB frames can then be fed to an RGB network in order to classify the sample.
 
 So, the employed method can be decomposed into two macro steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
-	\item A convolutional neural network, which will be referred to as WfcNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
-	\item Using WfcNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in two backbones, one fed with generated RGB frames and the other with the original RGB frames, and whose output features are concatenated and fed to the ConvLSTM.
+	\item A convolutional neural network, which will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
+	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in two backbones, one fed with colorised warp flow frames and the other with the original RGB frames, and whose output features are concatenated and fed to the ConvLSTM.
 \end{enumerate}
 
-\subsection{WfcNet}
-WfcNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure allows for better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
+\subsection{WFCNet}
 
-WfcNet is made of basic blocks: each block has got two convolutional layers, one ReLu between them, batch normalisation at the output of each convolutional
-layer, and a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
-As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the input is done using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt while at the same time the advantages of the residual block are preserved.
-The upsampling of the input is performed instead applying a simple nearest neighbour resizing followed by a convolution filter with a stride of 1 and kernel size of 1.
+\begin{figure*}
+	\begin{center}
+		\includegraphics[width=\textwidth]{schemi/WFCNet.img.pdf}		
+	\end{center}
+	\caption{WFCNet architecture representation}
+	\label{fig:WFCNet}
+\end{figure*}
 
+WFCNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure allows for better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
 
+WFCNet is made of basic blocks: each block has got two convolutional layers with a kernel size of 3, a stride 1 and a padding of 1, one ReLu between them, batch normalisation at the output of each convolutional layer, and a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
+As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the input is done using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt leading to better downsampled feature maps, while at the same time the advantages of the residual block are preserved.
+The upsampling of the input is performed instead by applying a nearest neighbour resizing followed by a convolution filter with a stride 1 and kernel size of 1.
+
+These basic blocks are grouped together in macro blocks. It should be noted that the downsampling or upsampling are performed only by the first convolutional layer of each macro block. The downsampling is the result of the adoption of a convolution with a stride of 2, kernel size of 3 and padding of 1; on the other hand, the upsampling is performed using a nearest neighbour resizing followed by a convolutional filter with a stride 1, kernel size of 3 and padding of 1 on every side. 
+
+This structure with gradual downsampling followed by a gradual upsampling allows for the extraction of RGB images with semantic segmentation for hands and those objects involved in the action, and at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
+
+Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pretrained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network pretrained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that generated images meet this requirement.
 
 \section{Experimental results}
 
