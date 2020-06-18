@@ -125,6 +125,24 @@ This structure with gradual downsampling followed by a gradual upsampling allows
 
 Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pretrained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network pretrained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that generated images meet this requirement.
 
+\subsection{Training WFCNet}
+
+The aim of the WFCNet block is to learn a mapping from input warp flow frames to output RGB frames.
+
+We propose two variants for WFCNet, which differ in the kind of input they accept:
+\begin{enumerate}
+	\item One single warp flow frame, consisting in two channel, i.e. the x-axis displacement and the y-axis displacement;
+	\item A stack of five consecutive warp flow frames, which account to a total number of 10 channels.
+\end{enumerate}
+
+In order to train WFCNet, a ResNet-34, followed by an average pooling and a fully connected layer, is employed. The complete architecture is represented in figure \ref{fig:WFCNet}: the input frame is colorised by WFCNet; then the resulting RGB image is fed to the ResNet-34; finally, the output features of the ResNet-34 are forwarded to the classification block, which consists in an average pooling (which reduces the feature map from a 512x7x7 volume to a vector of 512 elements) and a fully connected layer.
+
+Each video sample consists in possibly more than one input frame, accounting for different time steps: for this reason, for each sample, multiple input frames are forwarded to the network, multiple RGB images are generated and so multiple output scores are produced by the final fully connected layer. For this reason, the average of the output scores is computed with respect to the time dimension.
+
+We treat this task as a classification problem, where the aim of the whole architecture (consisting in WFCNet, ResNet, and classification block) is to predict the class label of the sample. For this reason, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and $P(y_i | x_i, w)$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
+
+
+
 \section{Experimental results}
 
 \subsection{Ego-RNN}
