@@ -137,6 +137,14 @@ We propose two variants for WFCNet, which differ in the kind of input they accep
 
 In order to train WFCNet, a ResNet-34, followed by an average pooling and a fully connected layer, is employed. The complete architecture is represented in figure \ref{fig:WFCNet}: the input frame is colorised by WFCNet; then the resulting RGB image is fed to the ResNet-34; finally, the output features of the ResNet-34 are forwarded to the classification block, which consists in an average pooling (which reduces the feature map from a 512x7x7 volume to a vector of 512 elements) and a fully connected layer.
 
+\begin{figure*}
+	\begin{center}
+		\includegraphics[width=\textwidth]{schemi/single_stream.img.pdf}		
+	\end{center}
+	\caption{WFCNet architecture representation}
+	\label{fig:SingleStream}
+\end{figure*}
+
 Each video sample consists in possibly more than one input frame, accounting for different time steps: for this reason, for each sample, multiple input frames are forwarded to the network, multiple RGB images are generated and so multiple output scores are produced by the final fully connected layer. For this reason, the average of the output scores is computed with respect to the time dimension.
 
 We treat this task as a classification problem, where the aim of the whole architecture (consisting in WFCNet, ResNet, and classification block) is to predict the class label of the sample. For this reason, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and $P(y_i | x_i, w)$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
