@@ -17,6 +17,8 @@
 \usepackage{enumitem}
 \setlist{nosep}
 
+\usepackage{multirow}
+
 % Include other packages here, before hyperref.
 
 % If you comment hyperref and then uncomment it, you should delete
@@ -78,24 +80,28 @@ The main disadvantage of this two stream approach is that motion informations an
 There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{planamente2020joint} where a motion segmentation task is deployed.
 
 \subsection{Attention model}
-One milestone for the development of a working solution for recognising the involved action is the acknowledgement of the important role played by the motion of the hands and the appearance of the objects in the scene. So, focusing the attention on the most important region of a frame of a video, while at the same time discarding irrelevant informations, is a key component for getting a great performance gain in terms of accuracy. For this reason, in \cite{Ego-RNN} an attention mechanism is employed in the RGB network in order to extract features with spatial attention.
+\label{par:AttentionModel}
+One milestone for the development of a working solution for recognising the involved action is the acknowledgement of the important role played by the motion of the hands and the appearance of the objects in the scene. So, focusing the attention on the most important region of a frame of a video, while at the same time discarding irrelevant informations, can be a key component for getting a great performance gain in terms of accuracy. For this reason, in \cite{Ego-RNN} an attention mechanism is employed in the ResNet backbone in order to extract features with spatial attention.
 
-To extract features with spatial attention, \textit{class activation maps} (CAMs) are employed: the $l$ output feature maps of the very last convolutional layer of the backbone are first forwarded to an average pool that reduces each feature map size to a 1x1 block, then those reduced feature maps are forwarded to a fully connected layer. The CAM for class $c$ is obtained, for each spatial location $i$, by dot multiplying the values of the $l$ feature maps at location $i$ and the weights of the neuron of the fully connected layer of class $c$, i.e. ${\text{CAM}_c(i) = \sum_l w_l^c f_l(i)}$. 
-
-So, the features with spatial attention are obtained by performing the Hadamard product between the output feature maps of the very last convolutional layer of the backbone and the output of the softmax operation applied to the CAM of the class with the highest probability.
+To extract features with spatial attention $f_{SA}$, \textit{class activation maps} (CAMs) are employed:
+\begin{enumerate}
+	\item The $l$ output feature maps of the very last convolutional layer of the backbone are forwarded to an average pool that reduces each feature map size to a 1x1 block, then those reduced feature maps are forwarded to a fully connected layer;
+	\item The CAM for class $c$ is obtained, for each spatial location $i$, by dot multiplying the values of the $l$ feature maps at location $i$ and the weights of the neuron of the fully connected layer of class $c$, i.e. ${\text{CAM}_c(i) = \sum_l w_l^c f_l(i)}$. 
+	\item The features with spatial attention $f_{SA}$ are obtained by performing the Hadamard product between the output feature maps of the very last convolutional layer of the backbone and the output of the softmax operation applied to the CAM of the class with the highest probability.
+\end{enumerate}
 
 The limit of the attention mechanism is that it almost completely discard any motion information but it only focuses on the appearance of each single frame. So, despite the deployment of the attention mechanism, in \cite{planamente2020joint} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
 
 \subsection{Motion segmentation task}
 The main idea behind this procedure is the addition of an auxiliary task: given an architecture where first a convolutional neural network extracts feature embeddings from RGB frames and then a ConvLSTM models temporal and infra-spatial correlations of such features, a second task is added to the output of the convolutional neural network with the intention of helping this shared backbone to extract more meaningful features and taking motion into account as well.
 
-In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so, an \textit{improved dense trajectory} (IDT) is associated to each frame; basically, an IDT is a binary map that compensates for camera motion and that, for each pixel, states whether a moving keypoint is present or not. This motion map is used as a ground truth for a motion segmentation task: the output feature maps of the last convolutional layer of the shared backbone are forwarded to a second branch where they are first processed by a convolutional layer and then forwarded to a fully connected layer. This auxiliary task aims to minimise the pixel-by-pixel cross entropy loss between the predicted motion map and the ground truth. Both auxiliary task and main task tasks are trained together, because the role of the auxiliary task is to help the shared backbone to extract better features so that they take into account motion as well: for this reason, the losses of the auxiliary task and the main task are summed together during training.
+In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so, an \textit{improved dense trajectory} (IDT) is associated to each frame; basically, an IDT is a binary map that compensates for camera motion and that, for each pixel, states whether a moving keypoint is present or not. This motion map is used as a ground truth for a motion segmentation task: the output feature maps of the last convolutional layer of the shared backbone are forwarded to a second branch where they are first processed by a convolutional layer and then forwarded to a fully connected layer. This auxiliary task aims to minimise the pixel-by-pixel cross entropy loss between the predicted motion map and the ground truth. Both auxiliary task and main task tasks are trained together, because the role of the auxiliary task is to help the shared backbone to extract better features, in the sense that they are able to into account motion as well: for this reason, the losses of the auxiliary task and the main task are summed together during training.
 
 
 \section{Proposed method}
 Our method is based on the fact that the employment of optical flow has been proved to be effective to capture and encode motion cues from moving objects. In this work, the warp flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
 
-Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Our method aims to extract RGB frames from warp flow frames: the generated RGB frames can then be fed to an RGB network in order to classify the sample.
+Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Our method extracts RGB frames from warp flow frames: by leveraging a pre-existing RGB network which features a ResNet-34 backbone already trained on ImageNet, our method aims to replicate the results obtained by this architecture achieved on standard RGB frames.
 
 So, the employed method can be decomposed into two macro steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
@@ -109,23 +115,31 @@ So, the employed method can be decomposed into two macro steps, which are briefl
 	\begin{center}
 		\includegraphics[width=\textwidth]{schemi/WFCNet.img.pdf}		
 	\end{center}
-	\caption{WFCNet architecture representation}
+	\caption{WFCNet module representation along with the whole architecture used in the training phase}
 	\label{fig:WFCNet}
 \end{figure*}
 
 WFCNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure allows for better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
 
-WFCNet is made of basic blocks: each block has got two convolutional layers with a kernel size of 3, a stride 1 and a padding of 1, one ReLu between them, batch normalisation at the output of each convolutional layer, and a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
-As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the input is done using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt leading to better downsampled feature maps, while at the same time the advantages of the residual block are preserved.
-The upsampling of the input is performed instead by applying a nearest neighbour resizing followed by a convolution filter with a stride 1 and kernel size of 1.
+WFCNet is made of basic blocks; each block consists in: two convolutional layers with kernel size of 3, stride of 1 and padding of 1; one ReLu between them; batch normalisation at the output of each convolutional layer; a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
+As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the residual input is done by using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt leading to better downsampled feature maps, while at the same time the advantages of the residual block are preserved.
+The upsampling of the residual input is performed instead by applying a nearest neighbour resizing followed by a convolution filter with a stride 1 and kernel size of 1.
 
-These basic blocks are grouped together in macro blocks. It should be noted that the downsampling or upsampling are performed only by the first convolutional layer of each macro block. The downsampling is the result of the adoption of a convolution with a stride of 2, kernel size of 3 and padding of 1; on the other hand, the upsampling is performed using a nearest neighbour resizing followed by a convolutional filter with a stride 1, kernel size of 3 and padding of 1 on every side. 
+These basic blocks are grouped together in blocks that we can call macro blocks. It should be noted that the downsampling or upsampling are performed only by the first convolutional layer of each macro block. The downsampling is the result of the adoption of a convolution with a stride of 2, kernel size of 3 and padding of 1; on the other hand, the upsampling is performed using a nearest neighbour resizing followed by a convolutional filter with a stride 1, kernel size of 3 and padding of 1 on every side. 
 
-This structure with gradual downsampling followed by a gradual upsampling allows for the extraction of RGB images with semantic segmentation for hands and those objects involved in the action, and at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
+This structure with gradual downsampling followed by a gradual upsampling allows for the extraction of RGB images with semantic segmentation for hands and objects involved in the action, while at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
 
-Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pretrained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pretrained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
+Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pre-trained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pre-trained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
+
+\begin{table}
+	\input{./tabelle/wfcnet}
+	\vspace{5mm}
+	\label{tab:wfcnet}
+	\caption{WFCNet detailed structure}
+\end{table}
 
 \subsection{Training WFCNet}
+\label{par:TrainingWFCNet}
 
 The aim of the WFCNet block is to learn a mapping from input warp flow frames to output RGB frames.
 
@@ -135,34 +149,92 @@ We propose two variants for WFCNet, which differ in the kind of input they accep
 	\item A stack of five consecutive warp flow frames, which account to a total number of 10 channels.
 \end{enumerate}
 
-In order to train WFCNet, a ResNet-34, followed by an average pooling and a fully connected layer, is employed. The complete architecture is represented in figure \ref{fig:WFCNet}: the input frame is colorised by WFCNet; then the resulting RGB image is fed to the ResNet-34; finally, the output features of the ResNet-34 are forwarded to the classification block, which consists in an average pooling (which reduces the feature map from a 512x7x7 volume to a vector of 512 elements) and a fully connected layer.
+In order to train WFCNet, a ResNet-34, followed by an average pooling and a fully connected layer, are employed. The complete architecture is represented in figure \ref{fig:WFCNet}: the input frame is colorised by WFCNet; then the resulting RGB image is fed to the ResNet-34; finally, the output features of the ResNet-34 are forwarded to the classification block, which consists in an average pooling (which reduces the feature maps from a 512x7x7 volume to a vector of 512 elements) and a fully connected layer.
+
+Each video sample consists in possibly more than one input frame, accounting for different time steps: for this reason, for each sample, multiple input frames are forwarded to the network, multiple RGB images are generated and so multiple output scores are produced by the final fully connected layer. For this reason, the average of the output scores is computed with respect to the time dimension.
+
+We treat this task as a classification problem, where the aim of the whole architecture (consisting in WFCNet, ResNet, and classification block) is to predict the class label of the sample. For this reason, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and ${P(y_i | x_i, w)}$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
+
+The whole training procedure consists in two main stages:
+\begin{enumerate}
+	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; the weights of WFCNet are randomly initialised using the uniform distribution according to the Kaiming procedure described in \cite{he2015delving}. Only the weights of WFCNet and the weights of the final fully connected layers are trained;
+	\item In this second stage, besides fine tuning the weights of WFCNet and the final fully connected layer, also the weights of the very last ``macro block'' of the ResNet-34 are fine tuned: in this way, the performances of the whole architecture are improved.
+\end{enumerate}
+It should be noted the performances of this architecture are not interesting \textit{per se}, since we are only interested in later reusing the WFCNet block in another network better suited for the action recognition task, i.e. the RGB network. However, we qualitatively observed to be present a positive correlation between high performances of this architecture and high performances of WFCNet in conjunction with the RGB network: so we employ this multi stage training for this particular reason.
+
+\subsection{Single-Stream RGB network}
 
 \begin{figure*}
 	\begin{center}
 		\includegraphics[width=\textwidth]{schemi/single_stream.img.pdf}		
 	\end{center}
-	\caption{WFCNet architecture representation}
+	\caption{Single-stream RGB network}
 	\label{fig:SingleStream}
 \end{figure*}
 
-Each video sample consists in possibly more than one input frame, accounting for different time steps: for this reason, for each sample, multiple input frames are forwarded to the network, multiple RGB images are generated and so multiple output scores are produced by the final fully connected layer. For this reason, the average of the output scores is computed with respect to the time dimension.
+The single-stream RGB network is closely inspired by the RGB network proposed in \cite{Ego-RNN}, but it performs the action recognition task on warp flow frames.
 
-We treat this task as a classification problem, where the aim of the whole architecture (consisting in WFCNet, ResNet, and classification block) is to predict the class label of the sample. For this reason, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and $P(y_i | x_i, w)$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
-
-The whole training procedure consists in two main steps:
+The structure of the network is represented in figure \ref{fig:SingleStream} and it consists of:
 \begin{enumerate}
-	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; \cite{he2015delving}
+	\item A WFCNet module, which is pre-trained in a previous stage as described in the paragraph \ref{par:TrainingWFCNet} and it is used to infer the RGB frames starting from warp flow frames;
+	\item a ResNet-34 pre-trained on ImageNet;
+	\item an attention mechanism, as described in paragraph \ref{par:AttentionModel}, which is used to extract features with spatial attention $f_{SA}$ from the convolutional backbone;
+	\item a ConvLSTM which is used to model the temporal and spatial correlations of the extracted feature maps with spatial attention;
+	\item an average pooling layer followed by a fully connected layer.
 \end{enumerate}
 
-\begin{figure*}
-	\begin{center}
-		\includegraphics[width=\textwidth]{schemi/two_stream.img.pdf}		
-	\end{center}
-	\caption{WFCNet architecture representation}
-	\label{fig:TwoStream}
-\end{figure*}
+The structure of the ConvLSTM is the same as the one employed in \cite{Ego-RNN}. The main differences from a standard LSTM cell is that a ConvLSTM cell performs convolutional operations in place of matrix multiplications, and that input and state data are represented with 3D tensors so that spatial encoding can also be performed.
+Therefore the reasons of using a ConvLSTM are the following ones:
+\begin{itemize}
+	\item There is the need to perform temporal encoding of the input features;
+	\item A simple Recurrent Neural Network consisting of a single state vector suffers from the gradient vanishing problem; an LSTM cell instead performs the necessary operations to attenuate this problem;
+	\item ConvLSTM cells have been proved to be effective in encoding spatial and temporal changes simultaneously.
+\end{itemize}
+The operations performed by the ConvLSTM can be represented by the following equations:
+\begin{equation*}
+\begin{gathered}
+i_t = \sigma(w_x^i * x + w_h^i * h_{t-1} + b_i) \\
+f_t = \sigma(w_x^f * x + w_h^f * h_{t-1} + b_f) \\
+o_t = \sigma(w_x^o * x + w_h^o * h_{t-1} + b_o)\\
+\tilde{c}_t = \tanh(w_x^c * x + w_h^c * h_{t-1} + b_{\tilde{c}}) \\
+c_t = \tilde{c}_t \odot i_t + c_{t-1} \odot f_t \\
+h_t = o_t \odot \tanh(c_t)
+\end{gathered}
+\end{equation*}
+where $x$ is the input, $\sigma$ is the sigmoid function, $i$, $f$, $o$ and $\tilde{c}_t$ are the four gates, $h$ and $c$ are respectively hidden state and memory state.
+The weights of the convolutions are initialised by sampling a normal distribution according to the Xavier procedure.
+
+Being this a classification problem, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and ${P(y_i | x_i, w)}$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
+
+During the training phase, the WFCNet block is always used in inference mode; the training is performed in two stages:
+\begin{enumerate}
+	\item In the first stage, the final fully connected layer and the ConvLSTM cell are trained, while the weights of the rest of the network are kept frozen;
+	\item In the second stage, besides fine tuning the final fully connected layer and the ConvLSTM cell, also the last ``macro block'' of the backbone and the hidden fully connected layer used for extracting the CAMs are fine tuned.
+\end{enumerate}
+
+\subsection{Two-Stream RGB network}
+
+%\begin{figure*}
+%	\begin{center}
+%		\includegraphics[width=\textwidth]{schemi/two_stream.img.pdf}		
+%	\end{center}
+%	\caption{Two-stream RGB network}
+%	\label{fig:TwoStream}
+%\end{figure*}
+
+We do realise that, in order to perform the action recognition task in the first person point of view, the warp flow by itself may not be sufficient in order to achieve satisfactory results. For this reason, we propose a two-stream network.
+
+ 
 
 \section{Experimental results}
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/GTEA61_boxplot.png}		
+	\end{center}
+	\caption{Distribution of scene lenghts}
+	\label{fig:GTEA61_boxplot}
+\end{figure}
 
 \subsection{Ego-RNN}
 

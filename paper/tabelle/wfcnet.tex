@@ -1,0 +1,48 @@
+\begin{tabular}{l|lp{40mm}}
+	Conv 0 & CONV & 2x7x7x8, s=2, p=3 \\
+	
+	\hline
+	\multirow{6}{*}{\shortstack{Conv 1\\(x2)}} & CONV & 8x3x3x8, s=1, p=1 \newline (s=2 for 1st block) \\
+	& BN & \\
+	& RELU & \\
+	& CONV & 8x3x3x8, s=1, p=1 \\
+	& BN & \\
+	& RES & \\
+	
+	\hline
+	\multirow{6}{*}{\shortstack{Conv 2\\(x3)}} & CONV & 16x3x3x16, s=1, p=1 \newline (8x3x3x16, s=2 for 1st block) \\
+	& BN & \\
+	& RELU & \\
+	& CONV & 16x3x3x16, s=1, p=1 \\
+	& BN & \\
+	& RES & \\
+	
+	\hline
+	& UPSAMPLE & factor=2 \\
+	& CONV & 16x1x1x16, s=1, p=0 \\
+	
+	\hline
+	\multirow{6}{*}{\shortstack{Deconv 1\\(x3)}} & CONV & 16x3x3x16, s=1, p=1 \\
+	& BN & \\
+	& RELU & \\
+	& CONV & 16x3x3x16, s=1, p=1 \\
+	& BN & \\
+	& RES & \\
+	
+	\hline
+	& UPSAMPLE & factor=2 \\
+	& CONV & 16x1x1x16, s=1, p=0 \\
+	
+	\hline
+	\multirow{6}{*}{\shortstack{Deconv 2\\(x2)}} & CONV & 8x3x3x8, s=1, p=1 \newline (16x3x3x8, for 1st block) \\
+	& BN & \\
+	& RELU & \\
+	& CONV & 8x3x3x8, s=1, p=1 \\
+	& BN & \\
+	& RES & \\
+	
+	\hline
+	\multirow{2}{*}{  Out} & CONV & 8x1x1x3, s=1, p=1 \\
+	& NORM & \\
+	
+\end{tabular}
