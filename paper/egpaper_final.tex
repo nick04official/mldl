@@ -105,7 +105,7 @@ So, the employed method can be decomposed into two macro steps, which are briefl
 
 \subsection{WFCNet}
 
-\begin{figure*}
+\begin{figure*}[t]
 	\begin{center}
 		\includegraphics[width=\textwidth]{schemi/WFCNet.img.pdf}		
 	\end{center}
@@ -123,7 +123,7 @@ These basic blocks are grouped together in macro blocks. It should be noted that
 
 This structure with gradual downsampling followed by a gradual upsampling allows for the extraction of RGB images with semantic segmentation for hands and those objects involved in the action, and at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
 
-Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pretrained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network pretrained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that generated images meet this requirement.
+Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pretrained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pretrained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
 
 \subsection{Training WFCNet}
 
@@ -149,7 +149,18 @@ Each video sample consists in possibly more than one input frame, accounting for
 
 We treat this task as a classification problem, where the aim of the whole architecture (consisting in WFCNet, ResNet, and classification block) is to predict the class label of the sample. For this reason, the \textit{Cross Entropy Loss} is employed, which can be expressed as ${L = -\sum_i^N{\log(P(y_i | x_i, w))}}$, where $N$ is the total number of samples, $x_i$ is the input sample, $y_i$ is the true label, and $P(y_i | x_i, w)$ is the predicted probability for the true label $y_i$ given the sample $x_i$ and the weights of the network $w$. The normalised probabilities for the different classes are computed using the softmax function: ${P(y_i | x_i, w) = \frac{e^{f_{y_i}}}{\sum_i e^{f_i}}}$.
 
+The whole training procedure consists in two main steps:
+\begin{enumerate}
+	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; \cite{he2015delving}
+\end{enumerate}
 
+\begin{figure*}
+	\begin{center}
+		\includegraphics[width=\textwidth]{schemi/two_stream.img.pdf}		
+	\end{center}
+	\caption{WFCNet architecture representation}
+	\label{fig:TwoStream}
+\end{figure*}
 
 \section{Experimental results}
 
