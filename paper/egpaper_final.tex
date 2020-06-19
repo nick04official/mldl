@@ -79,16 +79,17 @@ ${I(x,y,t) = I(x + \Delta x, y + \Delta y, t + \Delta t)}$. By rewriting the rig
 A main issue with optical flow is that camera motion highly influences the process, thus adding unnecessary noise to the computed results. So, in order to subtract camera motion, in \cite{wang2013trajectiories} the warped optical flow is introduced. It consists in inferring the global background motion by estimating the homography matrix and then subtracting the camera motion from the computed optical flow. This second procedure is particularly useful for removing noisy movements in the first person point of view videos, as in the case of an action cam mounted on a shoulder of a person.
 
 \subsection{Two-stream approach}
+\label{par:Ego-RNN}
 
 The first person action recognition task has been tackled by several works in recent years, and various solutions involving deep learning algorithms have been proposed.
 
-In most works, a convolutional neural network, such as a ResNet-34, is used to extract feature embeddings from RGB images; then, a Convolutional Long Short-Term Memory (ConvLSTM) is used to model the temporal dependencies between the feature maps extracted by the convolutional segment and the spatial correlations inside each of those; finally, a linear classifier on the features extracted by the ConvLSTM is used to classify the portrayed action.
+In \cite{Ego-RNN}, a ResNet-34, is used to extract feature embeddings from RGB images; then, a Convolutional Long Short-Term Memory (ConvLSTM) is used to model the temporal dependencies between the feature maps extracted by the convolutional segment and the spatial correlations inside each of those; finally, a linear classifier on the features extracted by the ConvLSTM is used to classify the portrayed action.
 
-However, the aforementioned model focuses on the appearances of each single frame, but it fails to take into account the motion happening in those frames in a effectively manner. To tackle this problem, a separate convolutional neural network can be trained on optical flows images.
+However, the aforementioned RGB network focuses on the appearances of each single frame, but it fails to take into account the motion happening in those frames in a effectively manner. To tackle this problem, a separate convolutional neural network can be trained on optical flows images; in \cite{Ego-RNN}, a Flow network trained on warped optical flow images achieves better results than training on optical flow thanks to the compensation of camera motion of the former.
 
 Then, on top of these two trained networks, a linear classifier is used to determine the class label of the given sample: while the classifier is trained on the output features of the two networks, the two networks are fine tuned on the weights obtained in a preceding set of training stages.
 
-The main disadvantage of this two stream approach is that motion information and appearance information are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
+The main disadvantage of this two-stream approach is that motion information and appearance information are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
 
 There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{planamente2020joint} where a motion segmentation task is deployed.
 
@@ -124,9 +125,9 @@ So, the employed method can be decomposed into two macro steps, which are briefl
 
 \subsection{WFCNet}
 
-\begin{figure*}[t]
+\begin{figure*}
 	\begin{center}
-		\includegraphics[width=\textwidth]{schemi/WFCNet.img.pdf}		
+		\includegraphics[width=\textwidth]{schemi/WFCNet_img.pdf}		
 	\end{center}
 	\caption{WFCNet module representation along with the whole architecture used in the training phase}
 	\label{fig:WFCNet}
@@ -179,13 +180,14 @@ It should be noted the performances of this architecture are not interesting \te
 
 \begin{figure*}
 	\begin{center}
-		\includegraphics[width=\textwidth]{schemi/single_stream.img.pdf}		
+		\includegraphics[width=\textwidth]{schemi/single_stream_img.pdf}		
 	\end{center}
 	\caption{Single-stream RGB network}
 	\label{fig:SingleStream}
 \end{figure*}
 
 The single-stream RGB network is closely inspired by the RGB network proposed in \cite{Ego-RNN}, but it performs the action recognition task on warp flow frames.
+We believe that, thanks to the WFCNet block, the same pipeline used for RGB images can also be applied on flow images, and therefore its strengths, such the attention mechanism and the temporal encoding capability, can also be experimented on warp flow frames. 
 
 The structure of the network is represented in figure \ref{fig:SingleStream} and it consists of:
 \begin{enumerate}
@@ -227,15 +229,21 @@ During the training phase, the WFCNet block is always used in inference mode; th
 
 \subsection{Two-Stream RGB network}
 
-%\begin{figure*}
-%	\begin{center}
-%		\includegraphics[width=\textwidth]{schemi/two_stream.img.pdf}		
-%	\end{center}
-%	\caption{Two-stream RGB network}
-%	\label{fig:TwoStream}
-%\end{figure*}
+\begin{figure*}
+	\begin{center}
+		\includegraphics[width=\textwidth]{schemi/two_stream1_img.pdf}		
+	\end{center}
+	\caption{Two-stream RGB network}
+	\label{fig:TwoStream}
+\end{figure*}
 
-We do realise that, in order to perform the action recognition task in the first person point of view, the warp flow by itself may not be sufficient to achieve discrete performances. For this reason, we propose a two-stream network.
+We believe that, in order to perform the action recognition task in the first person point of view, the warp flow may not be sufficient  by itself to achieve high performances, but the appearances of the objects may play an important role as well. In fact, no special equipment is used at collection time to obtain the warped optical flow: computing the warped optical flow can be seen as projecting the original data in another space where movement is highlighted and appearance is discarded. Therefore we argue that the warp flow helps deep learning models in encoding motion in an effectively, but at the same time, the appearance of the object is useful data that would be discarded if only warp flow frames were employed. For this reason, we propose a two-stream network featuring a shared backbone.
+
+This architecture is represented in figure \ref{fig:TwoStream} and is very similar to the previous variant: it features a shared backbone pre-trained on ImageNet and it is fed with both RGB and warp flow frames. This is possible because the warp flow frames are actually processed first by WFCNet, which is used to infer RGB images starting from warp flow frames. An attention mechanism is also employed on the output features of the backbone as explained in paragraph \ref{par:AttentionModel}.
+
+Two separate ConvLSTM cells are employed: one cell operates on the feature extracted by the backbone from the RGB frames, the other on the feature extracted from the warp flow frames. Then, after being reduced by an average pooling layer, the output features of the two ConvLSTM cells are concatenated, and a fully connected layer is employed to compute the class scores.
+
+After applying the softmax function on the output scores, the \textit{Cross Entropy Loss} is computed.
 
 \section{Experimental results}
 
@@ -251,7 +259,7 @@ In this section we first introduce the dataset that we used in this work, then w
 	\label{fig:GTEA61_boxplot}
 \end{figure}
 
-The GTEA-61 dataset contains several video clips recorded at 15 fps which portrays 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data: specifically we always consider the actions performed by subject 2 as validation data.
+The GTEA-61 dataset contains several video clips recorded at 15 fps which portray 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data: specifically we always consider the actions performed by subject 2 as validation data.
 
 In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as in the case in which $N = 16$ frames are sampled but the clip is shorter than a second: this may negatively impact the performances of the experimented models.
 
