@@ -17,7 +17,7 @@ from models.attention_model import AttentionModel
 from models.two_stream_model import TwoStreamAttentionModel
 from models.resnet.flow_resnet import flow_resnet34
 
-from utils.trainer import train_model, forward_rgb, forward_rgbmmaps, forward_flow, forward_rgbflow
+from utils.trainer import train_model, forward_rgb, forward_rgbmmaps, forward_flow, forward_rgbflow, forward_flowmultiple, forward_rgbflowmultiple
 
 def main(configs):
 
@@ -46,6 +46,7 @@ def main(configs):
         pass
 
     normalize = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normalize_5 = Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     randomHorizontalFlip = RandomHorizontalFlip()
     randomMultiScaleCornerCrop = MultiScaleCornerCrop([1, 0.875, 0.75, 0.65625], 224)
 
@@ -69,6 +70,15 @@ def main(configs):
     valid_transforms_mmaps = Compose([CenterCrop(224),
                                 Scale(7),
                                 ToTensor(), Binarize()])
+
+    train_transforms_5 = Compose([randomHorizontalFlip, 
+                                randomMultiScaleCornerCrop,
+                                ToTensor(), 
+                                normalize_5])
+
+    valid_transforms_5 = Compose([CenterCrop(224),
+                                ToTensor(),
+                                normalize_5])
 
     print('Loading dataset')
 
@@ -102,13 +112,13 @@ def main(configs):
 
         forward_fn = forward_flow
     elif configs.dataset == 'DatasetFlowMultiple':
-        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple_jittered')
-        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms, stack_size=configs.dataset_flow_stack_size, sequence_mode='multiple')
+        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms_5, stack_size=configs.dataset_flow_stack_size, n_sequences=configs.dataset_flow_n_sequences, sequence_mode='multiple_jittered')
+        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms_5, stack_size=configs.dataset_flow_stack_size, n_sequences=configs.dataset_flow_n_sequences, sequence_mode='multiple')
 
         dataset_train = dataset_flow_train
         dataset_valid = dataset_flow_valid
 
-        forward_fn = forward_flow
+        forward_fn = forward_flowmultiple
     elif configs.dataset == 'DatasetRGBFlow':
         dataset_rgb_train = DatasetRGB(configs.dataset_folder, dataset_rgb_train_json, spatial_transform=train_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
         dataset_rgb_valid = DatasetRGB(configs.dataset_folder, dataset_rgb_valid_json, spatial_transform=valid_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
@@ -122,10 +132,23 @@ def main(configs):
         dataset_valid = dataset_rgbflow_valid
 
         forward_fn = forward_rgbflow
+    elif configs.dataset == 'DatasetRGBFlowMultiple':
+        dataset_rgb_train = DatasetRGB(configs.dataset_folder, dataset_rgb_train_json, spatial_transform=train_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
+        dataset_rgb_valid = DatasetRGB(configs.dataset_folder, dataset_rgb_valid_json, spatial_transform=valid_transforms, seqLen=configs.dataset_rgb_n_frames, minLen=5)
+        dataset_flow_train = DatasetFlow(configs.dataset_folder, dataset_flow_train_json, spatial_transform=train_transforms_5, stack_size=configs.dataset_flow_stack_size, n_sequences=configs.dataset_rgb_n_frames, sequence_mode='multiple', enable_randomize_transform=False)
+        dataset_flow_valid = DatasetFlow(configs.dataset_folder, dataset_flow_valid_json, spatial_transform=valid_transforms_5, stack_size=configs.dataset_flow_stack_size, n_sequences=configs.dataset_rgb_n_frames, sequence_mode='multiple', enable_randomize_transform=False)
+
+        dataset_rgbflow_train = DatasetRGBFlow(dataset_rgb_train, dataset_flow_train)
+        dataset_rgbflow_valid = DatasetRGBFlow(dataset_rgb_valid, dataset_flow_valid)
+
+        dataset_train = dataset_rgbflow_train
+        dataset_valid = dataset_rgbflow_valid
+
+        forward_fn = forward_rgbflowmultiple
     else:
         raise ValueError('Unknown dataset type: {}'.format(configs.dataset))
     
-    report_file = open(os.path.join(configs.output_folder, 'report.txt'), 'w')
+    report_file = open(os.path.join(configs.output_folder, 'report.txt'), 'a')
 
     for config in configs:
         config_name = hashlib.md5(str(config).encode('utf-8')).hexdigest()

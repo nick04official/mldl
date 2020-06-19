@@ -67,6 +67,25 @@ def forward_flow(model, batch, loss_fn):
 
     return loss_values, n_elements, n_corrects
 
+def forward_flowmultiple(model, batch, loss_fn):
+    flow_input, label = batch
+ 
+    inputVariable = Variable(flow_input.permute(1, 0, 2, 3, 4).cuda())
+    labelVariable = Variable(label.cuda())
+ 
+    output = model(inputVariable)
+ 
+    output_label = output['classifications']
+ 
+    loss_values = loss_fn(output_label, labelVariable)
+    
+    n_elements = int(len(labelVariable))
+ 
+    _, predicted = torch.max(output_label.data, 1)
+    n_corrects = int((predicted == labelVariable).sum())
+ 
+    return loss_values, n_elements, n_corrects
+
 def forward_rgbflow(model, batch, loss_fn):
     rgb_input, flow_input, label = batch
 
@@ -75,6 +94,26 @@ def forward_rgbflow(model, batch, loss_fn):
     labelVariable = Variable(label.cuda())
 
     output = model((frameVariable, flowVariable))
+
+    output_label = output['classifications']
+
+    loss_values = loss_fn(output_label, labelVariable)
+    
+    n_elements = int(len(labelVariable))
+
+    _, predicted = torch.max(output_label.data, 1)
+    n_corrects = int((predicted == labelVariable).sum())
+
+    return loss_values, n_elements, n_corrects
+
+def forward_rgbflowmultiple(model, batch, loss_fn):
+    rgb_input, flow_input, label = batch
+
+    inputRGBVariable = Variable(rgb_input.permute(1, 0, 2, 3, 4).cuda())
+    inputFlowVariable = Variable(flow_input.permute(1, 0, 2, 3, 4).cuda())
+    labelVariable = Variable(label.cuda())
+
+    output = model(inputRGBVariable, inputFlowVariable)
 
     output_label = output['classifications']
 
