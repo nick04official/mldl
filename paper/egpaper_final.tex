@@ -57,9 +57,9 @@ S277910\\
 
 One of the main challenges in the field of Computer Vision and Artificial Intelligence lies in the recognition of the actions included inside a video. Until now, the research has been concentrated on the data provided by specific kinds of cameras, used in particular ares and in particular places, which capture the alternating of the everyday life from an external narrator point of view, i.e in third person.
 
-A lot of areas are interested in a classification based on first person videos. Among them, the robotic applications could be surely cited, starting from the definition of the androids’ intelligence like iCub\textsuperscript{\textcopyright} to the autonomous driving, together with the surveillance, the composition of the people’s behavioral profile, in order to predict and then to prevent potential offenses, the analysis of the users’ content informations to allow a tracking of their preferences loyalizing their experience inside the service etc.
+A lot of areas are interested in a classification based on first person videos. Among them, the robotic applications could be surely cited, starting from the definition of the androids’ intelligence like iCub\textsuperscript{\textcopyright} to the autonomous driving, together with the surveillance, the composition of the people’s behavioral profile, in order to predict and then to prevent potential offenses, the analysis of the users’ content information to allow a tracking of their preferences loyalizing their experience inside the service etc.
 
-The datasets which contains these informations, until now, are very small but, in the future with the growing increase of the sale of wearable devices, with the undeterred increment of the ease to have at our disposal a camera and with the exponential growth of the number of photos and videos taken every day in all over the world, this limit could be easily surpassed. 
+The datasets which contains this information, until now, are very small but, in the future with the growing increase of the sale of wearable devices, with the undeterred increment of the ease to have at our disposal a camera and with the exponential growth of the number of photos and videos taken every day in all over the world, this limit could be easily surpassed. 
 
 In addition the first person images present further difficulties than the one in third person. First of all, it is very frequent to observe inside this videos limbs of him who is capturing the action. So this features has to be used in order to promote the action recognition and not to disadvantage the task. Then it is very probable that the camera which is taking the video is mounted on the head of the subject who is performing the operation and if so also the perspective change basing on what the cameraman is watching in that moment.
 
@@ -67,21 +67,34 @@ Dependently on the context, the video classification could be more precise or le
 
 \section{Related works}
 
+In this section we introduce some of the recent approaches used to process first person videos along with some of the employed preprocessing techniques.
+
+\subsection{Optical flow and warped optical flow}
+
+In order to encode motion of objects and isolate it from their appearance, optical flow is often employed in many machine learning approaches.
+
+The main assumption of the optical flow extraction procedure is that, between two still frames, objects have moved by a small amount, if any, and their brightness has not changed. This is not always true: for instance, an object could fall inside the shadow cast by another object, therefore altering their brightness. Formally, by writing the brightness $I$ as function of space $x,y$ and time $t$, the following equation can be expressed:
+${I(x,y,t) = I(x + \Delta x, y + \Delta y, t + \Delta t)}$. By rewriting the right member as its Taylor expansion up to its first term, the following holds: $\nabla I \cdot \vec{V} = -I_t$. In this single equation, both the $x$ component and the $y$ component of velocity $V$ are unknown. This is described as the aperture problem, and so, to actually compute the optical flow, further constraints are put in place.
+
+A main issue with optical flow is that camera motion highly influences the process, thus adding unnecessary noise to the computed results. So, in order to subtract camera motion, in \cite{wang2013trajectiories} the warped optical flow is introduced. It consists in inferring the global background motion by estimating the homography matrix and then subtracting the camera motion from the computed optical flow. This second procedure is particularly useful for removing noisy movements in the first person point of view videos, as in the case of an action cam mounted on a shoulder of a person.
+
+\subsection{Two-stream approach}
+
 The first person action recognition task has been tackled by several works in recent years, and various solutions involving deep learning algorithms have been proposed.
 
-In most works, a convolutional neural network is used to extract feature embeddings from RGB images; then, a Convolutional Long Short-Term Memory (ConvLSTM) is used to model the temporal dependencies between the feature maps extracted by the convolutional segment and the spatial correlations inside each of those; finally, a linear classifier on the features extracted by the ConvLSTM is used to classify the portrayed action.
+In most works, a convolutional neural network, such as a ResNet-34, is used to extract feature embeddings from RGB images; then, a Convolutional Long Short-Term Memory (ConvLSTM) is used to model the temporal dependencies between the feature maps extracted by the convolutional segment and the spatial correlations inside each of those; finally, a linear classifier on the features extracted by the ConvLSTM is used to classify the portrayed action.
 
-However, the aforementioned model focuses on the appearances of each single frame, but it fails to take into account the motion happening in those frames in a effectively manner. To tackle this problem, usually a separate convolutional neural network is trained on optical flows images.
+However, the aforementioned model focuses on the appearances of each single frame, but it fails to take into account the motion happening in those frames in a effectively manner. To tackle this problem, a separate convolutional neural network can be trained on optical flows images.
 
 Then, on top of these two trained networks, a linear classifier is used to determine the class label of the given sample: while the classifier is trained on the output features of the two networks, the two networks are fine tuned on the weights obtained in a preceding set of training stages.
 
-The main disadvantage of this two stream approach is that motion informations and appearance informations are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
+The main disadvantage of this two stream approach is that motion information and appearance information are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
 
 There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{planamente2020joint} where a motion segmentation task is deployed.
 
 \subsection{Attention model}
 \label{par:AttentionModel}
-One milestone for the development of a working solution for recognising the involved action is the acknowledgement of the important role played by the motion of the hands and the appearance of the objects in the scene. So, focusing the attention on the most important region of a frame of a video, while at the same time discarding irrelevant informations, can be a key component for getting a great performance gain in terms of accuracy. For this reason, in \cite{Ego-RNN} an attention mechanism is employed in the ResNet backbone in order to extract features with spatial attention.
+One milestone for the development of a working solution for recognising the involved action is the acknowledgement of the important role played by the motion of the hands and the appearance of the objects in the scene. So, focusing the attention on the most important region of a frame of a video, while at the same time discarding irrelevant information, can be a key component for getting a great performance gain in terms of accuracy. For this reason, in \cite{Ego-RNN} an attention mechanism is employed in the ResNet backbone in order to extract features with spatial attention.
 
 To extract features with spatial attention $f_{SA}$, \textit{class activation maps} (CAMs) are employed:
 \begin{enumerate}
@@ -90,7 +103,7 @@ To extract features with spatial attention $f_{SA}$, \textit{class activation ma
 	\item The features with spatial attention $f_{SA}$ are obtained by performing the Hadamard product between the output feature maps of the very last convolutional layer of the backbone and the output of the softmax operation applied to the CAM of the class with the highest probability.
 \end{enumerate}
 
-The limit of the attention mechanism is that it almost completely discard any motion information but it only focuses on the appearance of each single frame. So, despite the deployment of the attention mechanism, in \cite{planamente2020joint} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
+The limit of the attention mechanism is that it almost completely discards any motion information but it only focuses on the appearance of each single frame. So, despite the deployment of the attention mechanism, in \cite{planamente2020joint} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
 
 \subsection{Motion segmentation task}
 The main idea behind this procedure is the addition of an auxiliary task: given an architecture where first a convolutional neural network extracts feature embeddings from RGB frames and then a ConvLSTM models temporal and infra-spatial correlations of such features, a second task is added to the output of the convolutional neural network with the intention of helping this shared backbone to extract more meaningful features and taking motion into account as well.
@@ -106,7 +119,7 @@ Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a c
 So, the employed method can be decomposed into two macro steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
 	\item A convolutional neural network, which will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
-	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in two backbones, one fed with colorised warp flow frames and the other with the original RGB frames, and whose output features are concatenated and fed to the ConvLSTM.
+	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to two ConvLSTMs.
 \end{enumerate}
 
 \subsection{WFCNet}
@@ -119,7 +132,7 @@ So, the employed method can be decomposed into two macro steps, which are briefl
 	\label{fig:WFCNet}
 \end{figure*}
 
-WFCNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure allows for better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
+WFCNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure enables a better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
 
 WFCNet is made of basic blocks; each block consists in: two convolutional layers with kernel size of 3, stride of 1 and padding of 1; one ReLu between them; batch normalisation at the output of each convolutional layer; a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
 As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the residual input is done by using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt leading to better downsampled feature maps, while at the same time the advantages of the residual block are preserved.
@@ -222,19 +235,25 @@ During the training phase, the WFCNet block is always used in inference mode; th
 %	\label{fig:TwoStream}
 %\end{figure*}
 
-We do realise that, in order to perform the action recognition task in the first person point of view, the warp flow by itself may not be sufficient in order to achieve satisfactory results. For this reason, we propose a two-stream network.
-
- 
+We do realise that, in order to perform the action recognition task in the first person point of view, the warp flow by itself may not be sufficient to achieve discrete performances. For this reason, we propose a two-stream network.
 
 \section{Experimental results}
+
+In this section we first introduce the dataset that we used in this work, then we describe the experiments that we performed on it.
+
+\subsection{Dataset}
 
 \begin{figure}
 	\begin{center}
 		\includegraphics[width=\linewidth]{grafici/GTEA61_boxplot.png}		
 	\end{center}
-	\caption{Distribution of scene lenghts}
+	\caption{GTEA-61 dataset; box-plots of sample lengths. A sample length is considered as outlier (and so represent as circle) if its value is greater than $Q_3 + 1.5(Q_3-Q_1)$, where $Q_i$ are quartiles}
 	\label{fig:GTEA61_boxplot}
 \end{figure}
+
+The GTEA-61 dataset contains several video clips recorded at 15 fps which portrays 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data: specifically we always consider the actions performed by S2 as validation data.
+
+In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations greatly vary, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as in the case in which $N = 16$ frames are sample but the clip is less shorter than a second. This may negatively impact the performances of the experimented models.
 
 \subsection{Ego-RNN}
 
