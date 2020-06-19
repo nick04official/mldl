@@ -60,7 +60,6 @@ Politecnico di Torino}
   \tableofcontents
 \end{frame}
 
-
 \section{Introduction}
 
 \begin{frame}
@@ -100,8 +99,8 @@ Interested Areas:
 Issues:
 \begin{itemize}
 \item Small datasets;
-\item Presence of parts of the cameraman's body in the video;
-\item The action must be represented by a \emph{verb + noun};
+\item Presence of \textbf{parts of the cameraman's body} in the video;
+\item The action \textbf{must be represented} by a \emph{verb + noun};
 \end{itemize}
 \end{frame}
 
@@ -109,13 +108,85 @@ Issues:
 \frametitle{Introduction 4/4}
 Solutions:
 \begin{itemize}
-\item Sales of wearable devices;
-\item Incrementing chance of having at hand a camera;
-\item Incrementing number of images taken every day \cite{photos};
+\item Sales of \textbf{wearable devices};
+\item Incrementing chance of \textbf{having at hand a camera};
+\item Incrementing number of \textbf{images taken every day} \cite{photos};
 \item Deeper neural networks;
 \end{itemize}
 \end{frame}
-         
+      
+\section{Related Works}
+
+\begin{frame}
+\frametitle{Overview} 
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+\frametitle{Two Stream Approach 1/2}
+Main characteristics:
+\begin{itemize}
+\item Two \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from flow images;
+\item \textbf{ConvLSTM} to take into account the \textbf{temporal dependencies};
+\item Linear \textbf{classifier} to \textbf{join the networks};
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Two Stream Approach 2/2}
+Issue:
+\begin{itemize}
+\item The correlation and the \textbf{mutual influence} between motion and appearance information is \textbf{not taken into account};
+\end{itemize}
+Solution:
+\begin{itemize}
+\item Implementing a single network accompanied by a \textbf{motion segmentation task};
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Attention Map}
+Features:
+\begin{itemize}
+\item \textbf{Focusing} the recognition on the \textbf{most important parts} of the video;
+\item \textbf{Discarding} the regions with \textbf{low importance};
+\item The temporal flow information, i.e \textbf{the motion}, \textbf{is not included} in the mechanism;
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Motion Segmentation Task}
+Features:
+\begin{itemize}
+\item Each \textbf{feature map} is forwarded to an \textbf{auxiliary branch} with a convolutional and a FC layer;
+\item \textbf{IDT} as ground truth: image which indicates if a \textbf{pixel is moving or not}, net to the camera motion;
+\item \textbf{Pixel-per-pixel} loss between the predicted motion map and the IDT;
+\end{itemize}
+\end{frame}
+
+\section{Proposed Methods}
+
+\begin{frame}
+\frametitle{Overview} 
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+
+\section{Proposed Methods}
+
+\begin{frame}
+\frametitle{Overview} 
+  \tableofcontents[currentsection]
+\end{frame}
+     
+\section{Conclusions}
+
+\begin{frame}
+\frametitle{Overview} 
+  \tableofcontents[currentsection]
+\end{frame}
+     
 \begin{frame}
 \frametitle{References}
    \begin{thebibliography}{9}
