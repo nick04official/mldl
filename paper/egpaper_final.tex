@@ -119,7 +119,7 @@ Our proposed method draws its inspiration from \cite{carlucci2017de2}, where a c
 
 So, the employed method can be decomposed into two macro steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
-	\item A convolutional neural network, which will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
+	\item A convolutional neural network, which performs the warp flow colorisation and will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
 	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to two ConvLSTMs.
 \end{enumerate}
 
@@ -133,7 +133,7 @@ So, the employed method can be decomposed into two macro steps, which are briefl
 	\label{fig:WFCNet}
 \end{figure*}
 
-WFCNet is a ResNet like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure enables a better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
+WFCNet is a ResNet-like network: it makes use of residual blocks which introduce additional direct connections from input to output that skip convolutional layers. This procedure enables a better gradient flow in the backward propagation step and prevents the gradient vanishing problem that limits the deepness of neural networks.
 
 WFCNet is made of basic blocks; each block consists in: two convolutional layers with kernel size of 3, stride of 1 and padding of 1; one ReLu between them; batch normalisation at the output of each convolutional layer; a direct connection from input to output, which is obtained by summing the input of the block to the output of the second convolution.
 As suggested by the work presented in \cite{springenberg2014striving}, the downsampling of the residual input is done by using a convolutional filter instead of a simple average pooling: in this way, an embedding can be learnt leading to better downsampled feature maps, while at the same time the advantages of the residual block are preserved.
@@ -237,7 +237,7 @@ During the training phase, the WFCNet block is always used in inference mode; th
 	\label{fig:TwoStream}
 \end{figure*}
 
-We believe that, in order to perform the action recognition task in the first person point of view, the warp flow may not be sufficient  by itself to achieve high performances, but the appearances of the objects may play an important role as well. In fact, no special equipment is used at collection time to obtain the warped optical flow: computing the warped optical flow can be seen as projecting the original data in another space where movement is highlighted and appearance is discarded. Therefore we argue that the warp flow helps deep learning models in encoding motion in an effectively, but at the same time, the appearance of the object is useful data that would be discarded if only warp flow frames were employed. For this reason, we propose a two-stream network featuring a shared backbone.
+We believe that, in order to perform the action recognition task in the first person point of view, the warp flow may not be sufficient  by itself to achieve high performances, but the appearances of the objects may play an important role as well. In fact, no special equipment is used at collection time to obtain the warped optical flow: computing the warped optical flow can be seen as projecting the original data in another space where movement is highlighted and appearance is discarded. Therefore we argue that the warp flow helps deep learning models in encoding motion in an effectively way, but at the same time, the appearance of the object is useful data that would be discarded if only warp flow frames were employed. For this reason, we propose a two-stream network featuring a shared backbone.
 
 This architecture is represented in figure \ref{fig:TwoStream} and is very similar to the previous variant: it features a shared backbone pre-trained on ImageNet and it is fed with both RGB and warp flow frames. This is possible because the warp flow frames are actually processed first by WFCNet, which is used to infer RGB images starting from warp flow frames. An attention mechanism is also employed on the output features of the backbone as explained in paragraph \ref{par:AttentionModel}.
 
@@ -261,11 +261,19 @@ In this section we first introduce the dataset that we used in this work, then w
 
 The GTEA-61 dataset contains several video clips recorded at 15 fps which portray 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data: specifically we always consider the actions performed by subject 2 as validation data.
 
-In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as in the case in which $N = 16$ frames are sampled but the clip is shorter than a second: this may negatively impact the performances of the experimented models.
+In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from approximately less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as the case in which $N = 16$ frames are sampled but the clip is shorter than a second: this may negatively impact the performances of the experimented models.
 
 \subsection{Ego-RNN}
 
+In this subsection, we present our experiments carried out on the models proposed in \cite{Ego-RNN}. In that work, a two-stream approach is proposed:
+\begin{itemize}
+	\item an RGB network, which consists of a ResNet backbone pre-trained on ImageNet, an attention mechanism, a ConvLSTM cell and a fully connected layer; the details of these blocks have been introduced in the previous paragraphs;
+	\item a Flow Network, which consists in a ResNet backbone pre-trained on ImageNet
+\end{itemize}
+
 \subsection{Self supervised task}
+
+
 
 \section{Conclusions}
 
