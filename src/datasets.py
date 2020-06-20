@@ -16,7 +16,7 @@ def load_image_PIL(path, mode='RGB'):
 
 class DatasetRGB(Dataset):
 
-    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
+    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, uniform_sampling=True, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
@@ -27,6 +27,7 @@ class DatasetRGB(Dataset):
         self.minLen = minLen
         self.device = device
         self.enable_randomize_transform = enable_randomize_transform
+        self.uniform_sampling = uniform_sampling
 
         self.scenes = []
         self.labels = []
@@ -44,23 +45,24 @@ class DatasetRGB(Dataset):
                     
                     if len(scene) >= self.minLen:
                         frames = []
-                        for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
-                            pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]))
-                            pil_image = scale(pil_image)
-                            if self.device == 'cpu':
-                                # Do not apply transformations, save as PIL on the CPU RAM
+                        if self.uniform_sampling:
+                            for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
+                                pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]))
+                                pil_image = scale(pil_image)
+                                if self.device == 'cpu':
+                                    # Do not apply transformations, save as PIL on the CPU RAM
+                                    frames.append(pil_image)
+                                elif self.device == 'cuda':
+                                    # Apply transformations and convert to tensor
+                                    # to be later transferred to GPU VRAM
+                                    frames.append(self.spatial_transform(pil_image))
+                        else:
+                            for frame in scene:
+                                pil_image = load_image_PIL(os.path.join(root_dir, frame))
+                                pil_image = scale(pil_image)
+                                if self.device == 'cuda':
+                                    pil_image = self.spatial_transform(pil_image)
                                 frames.append(pil_image)
-                            elif self.device == 'cuda':
-                                # Apply transformations and convert to tensor
-                                # to be later transferred to GPU VRAM
-                                frames.append(self.spatial_transform(pil_image))
-
-                        """for frame in scene:
-                            pil_image = load_image_PIL(os.path.join(root_dir, frame))
-                            pil_image = scale(pil_image)
-                            if self.device == 'cuda':
-                                pil_image = self.spatial_transform(pil_image)
-                            frames.append(pil_image)"""
 
                         if self.device == 'cpu':
                             self.scenes.append(frames)
@@ -80,23 +82,34 @@ class DatasetRGB(Dataset):
 
     def __getitem__(self, idx):
         label = self.labels[idx]
+  
+        if self.uniform_sampling:
+            if self.device == 'cpu':
+                if self.enable_randomize_transform:
+                    self.spatial_transform.randomize_parameters()
+                frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
+            elif self.device == 'cuda':
+                frames = self.scenes[idx]
+        else:
+            selected_frame_indices = np.array([int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)])
+            if len(selected_frame_indices) > 2:
+                d = selected_frame_indices[1] - selected_frame_indices[0]
+                deltas = ((np.random.rand(len(selected_frame_indices) - 2) - .5) * d).astype(int)
+                selected_frame_indices = selected_frame_indices + np.array([0, *deltas, 0])
+                selected_frame_indices = selected_frame_indices.astype(int)
+            if self.device == 'cpu':
+                if self.enable_randomize_transform:
+                    self.spatial_transform.randomize_parameters()
+                frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
+            elif self.device == 'cuda':
+                frames = self.scenes[idx][selected_frame_indices]
 
-        #selected_frame_indices = [int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)]
-        if self.device == 'cpu':
-            if self.enable_randomize_transform:
-                self.spatial_transform.randomize_parameters()
-            #frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
-            frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
-        elif self.device == 'cuda':
-            #frames = self.scenes[idx][selected_frame_indices]
-            frames = self.scenes[idx]
-        
         return frames, label
 
 
 class DatasetMMAPS(Dataset):
 
-    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
+    def __init__(self, root_dir, json_dataset, spatial_transform=None, seqLen=20, minLen=1, uniform_sampling=True, device='cpu', scale_to=256, label_ids=None, enable_randomize_transform=True):
         
         if device not in {'cpu', 'cuda'}:
             raise ValueError('Wrong device, only cpu or cuda are allowed')
@@ -107,6 +120,7 @@ class DatasetMMAPS(Dataset):
         self.minLen = minLen
         self.device = device
         self.enable_randomize_transform = enable_randomize_transform
+        self.uniform_sampling = uniform_sampling
 
         self.scenes = []
         self.labels = []
@@ -124,23 +138,24 @@ class DatasetMMAPS(Dataset):
                     
                     if len(scene) >= self.minLen:
                         frames = []
-                        for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
-                            pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]), mode='L')
-                            pil_image = scale(pil_image)
-                            if self.device == 'cpu':
-                                # Do not apply transformations, save as PIL on the CPU RAM
+                        if self.uniform_sampling:
+                            for i in np.linspace(0, len(scene), self.seqLen, endpoint=False):
+                                pil_image = load_image_PIL(os.path.join(root_dir, scene[int(i)]), mode='L')
+                                pil_image = scale(pil_image)
+                                if self.device == 'cpu':
+                                    # Do not apply transformations, save as PIL on the CPU RAM
+                                    frames.append(pil_image)
+                                elif self.device == 'cuda':
+                                    # Apply transformations and convert to tensor
+                                    # to be later transferred to GPU VRAM
+                                    frames.append(self.spatial_transform(pil_image))
+                        else:
+                            for frame in scene:
+                                pil_image = load_image_PIL(os.path.join(root_dir, frame))
+                                pil_image = scale(pil_image)
+                                if self.device == 'cuda':
+                                    pil_image = self.spatial_transform(pil_image)
                                 frames.append(pil_image)
-                            elif self.device == 'cuda':
-                                # Apply transformations and convert to tensor
-                                # to be later transferred to GPU VRAM
-                                frames.append(self.spatial_transform(pil_image))
-
-                        """for frame in scene:
-                            pil_image = load_image_PIL(os.path.join(root_dir, frame))
-                            pil_image = scale(pil_image)
-                            if self.device == 'cuda':
-                                pil_image = self.spatial_transform(pil_image)
-                            frames.append(pil_image)"""
 
                         if self.device == 'cpu':
                             self.scenes.append(frames)
@@ -160,19 +175,29 @@ class DatasetMMAPS(Dataset):
 
     def __getitem__(self, idx):
         label = self.labels[idx]
+  
+        if self.uniform_sampling:
+            if self.device == 'cpu':
+                if self.enable_randomize_transform:
+                    self.spatial_transform.randomize_parameters()
+                frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
+            elif self.device == 'cuda':
+                frames = self.scenes[idx]
+        else:
+            selected_frame_indices = np.array([int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)])
+            if len(selected_frame_indices) > 2:
+                d = selected_frame_indices[1] - selected_frame_indices[0]
+                deltas = ((np.random.rand(len(selected_frame_indices) - 2) - .5) * d).astype(int)
+                selected_frame_indices = selected_frame_indices + np.array([0, *deltas, 0])
+                selected_frame_indices = selected_frame_indices.astype(int)
+            if self.device == 'cpu':
+                if self.enable_randomize_transform:
+                    self.spatial_transform.randomize_parameters()
+                frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
+            elif self.device == 'cuda':
+                frames = self.scenes[idx][selected_frame_indices]
 
-        #selected_frame_indices = [int(i) for i in np.linspace(0, len(self.scenes[idx]), self.seqLen, endpoint=False)]
-        if self.device == 'cpu':
-            if self.enable_randomize_transform:
-                self.spatial_transform.randomize_parameters()
-            #frames = torch.stack([self.spatial_transform(self.scenes[idx][i]) for i in selected_frame_indices], 0)
-            frames = torch.stack([self.spatial_transform(frame) for frame in self.scenes[idx]], 0)
-        elif self.device == 'cuda':
-            #frames = self.scenes[idx][selected_frame_indices]
-            frames = self.scenes[idx]
-        
         return frames, label
-
 
 class DatasetFlow(Dataset):
 
@@ -241,7 +266,7 @@ class DatasetFlow(Dataset):
             first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences).astype(int)
         elif self.sequence_mode == 'multiple_jittered':
             first_frames = np.linspace(0, scene_len - self.stack_size, self.n_sequences)
-            if len(first_frames > 2):
+            if len(first_frames) > 2:
                 d = first_frames[1] - first_frames[0]
                 deltas = ((np.random.rand(len(first_frames) - 2) - .5) * d).astype(int)
                 first_frames = first_frames + np.array([0, *deltas, 0])

@@ -122,6 +122,10 @@ class AttentionModel(nn.Module):
 
         return {'classifications': feats, 'ms_feats': ms_feats, 'lstm_feats': feats1}
 
+    def get_class_activation_id(self, inputVariable):
+        logit, _, _ = self.resnet(inputVariable)
+        return logit
+
     def get_cam_visualisation(self, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
         if preprocess_for_viz == None:
             preprocess_for_viz = Compose([
