@@ -104,7 +104,7 @@ To extract features with spatial attention $f_{SA}$, \textit{class activation ma
 	\item The features with spatial attention $f_{SA}$ are obtained by performing the Hadamard product between the output feature maps of the very last convolutional layer of the backbone and the output of the softmax operation applied to the CAM of the class with the highest probability.
 \end{enumerate}
 
-To summarise, we can think of a CAM as a linear classifier: given a spatial location, it outputs a score which states the relevance of that spatial location regarding the performed action; by applying the softmax operation on the scores for all the spatial positions of the input, these scores can be turned into normalised scores (or probabilities) regarding how that position is relevant for the action; then, by dot multiplying the normalised scores and input, the interesting regions of the input are amplified. The main reasoning behind this procedure is that different actions cause different neurons in the hidden fully connected layer to activate; therefore, by computing the CAM using the weights of the neuron of the winning class, action-specific regions of the input frame are highlighted. However, we verified that this is not the case: by replicating the experiments proposed in \cite{Ego-RNN}, and also by running their trained model published online, we verified that, at convergence, the same hidden neuron is activated for all the input samples.
+To summarise, we can think of a CAM as the result of a linear classifier: given a spatial location, it outputs a score which states the relevance of that spatial location for the recognition of the performed action; by applying the softmax operation on the scores of all the spatial locations of the input, these scores can be turned into normalised scores (or probabilities) regarding how much each position is relevant for the action; then, by dot multiplying the normalised scores and input, the interesting regions of the input are amplified. The main reasoning behind this procedure is that the same classifier can also be used to discriminate the involved action: so by grouping a number of these linear classifiers in a fully connected layer and by feeding this fully connected layer with an average-pooled version of the input, a different neuron will reach the highest score depending on the depicted action; therefore, by computing the CAM using the weights of the neuron of the winning class, action-specific regions of the input frame are highlighted. However, we verified that this is not the case: by replicating the experiments proposed in \cite{Ego-RNN}, and also by running their trained model published online, we verified that, at convergence, the same hidden neuron is activated for all the input samples. As a result, we propose a simpler attention mechanism which is still capable of reaching the same performances.
 
 The limit of the attention mechanism applied on RGB images is that it does not take into account motion information, but it focuses on the appearance of each single frame in a stateless manner. So, despite the deployment of the attention mechanism, in \cite{Ego-RNN} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
 
@@ -115,22 +115,32 @@ In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so,
 
 
 \section{Proposed method}
-Our method consists in first replacing the attention mechanism in the RGB network proposed in \cite{Ego-RNN} with a equally effective one, which consists in just a linear classifier. After proving that this modified network achieves the same performances on RGB images, we try to leverage the strength of this network on warped optical flow frames. In order to adapt the warp flow frames to the RGB network, we perform a colorisation: to do so, we draw our inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Finally, we propose a second variant where both RGB images and flow images are processed in a single network, which tries to model both the motion cues encoded by the warp flow frames, and the appearances of the objects encoded by the RGB frames.
+Our method consists in first replacing the attention mechanism in the RGB network proposed in \cite{Ego-RNN} with a simpler but still equally effective one, which consists in just a linear classifier. After proving that this modified network achieves the same performances on RGB images, we try to leverage the strength of this network on warped optical flow frames. In order to adapt the warp flow frames to the RGB network, we perform a colorisation: to do so, we draw inspiration from \cite{carlucci2017de2}, where a convolutional neural network is used to colorise depth images. Finally, we propose a second variant where both RGB images and flow images are processed in a single network, which tries to model both the motion cues encoded by the warp flow frames, and the appearances of the objects encoded by the RGB frames.
 
 \subsection{New attention mechanism}
+\label{par:new_am}
 
+As anticipated in \ref{par:AttentionModel}, the attention mechanism can be thought as a linear classifier that gives a relevance score for each spatial location of the input and then amplifies the relevant spatial locations of the input according to their scores. Therefore, we implement this variant on the RGB network proposed in \cite{Ego-RNN}.
 
-The employment of optical flow has been proved to be effective to capture and encode motion cues from moving objects. In this work, the warp flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
+The output feature maps of the last convolutional layer of the backbone, whose size is 512x7x7, is our input: there are 49 spatial locations and each one is described by 512 variables. A linear classifier, which is a simple 512 long vector, produces the relevance score for each of the 49 spatial locations; then, the softmax function is applied on the output scores, producing what can be referred to as activation map. Finally, the features with spatial attention $f_{SA}$ are obtained by performing the element-wise product of the input features and the activation map.
 
-Our proposed method draws itss. Our method extracts RGB frames from warp flow frames: by leveraging a pre-existing RGB network which features a ResNet-34 backbone already trained on ImageNet, our method aims to replicate on flow frames the results achieved by this architecture on standard RGB frames.
+To put formally, given the input $f$ and $w$ the weights of the attention mechanism, the output score $s$ for the spatial location $i$ is given by $s(i) = \sum_l w_l f_l(i)$; the activation map $AM$ for spatial location $i$ is then computed as $AM(i) = \frac{e^{s(i)}}{\sum_i e^{s(i)}}$. The feature with spatial attention $f_{SA}$ are then obtained by computing the element-wise product between the input $f$ and the activation map $AM$: $f_{SA} = AM \odot f$.
+
+By placing this simplified attention mechanism in the RGB network proposed in \cite{Ego-RNN} (briefly described in \ref{par:Ego-RNN}), we will show that roughly the same performances are achieved.
+
+\subsection{Warp flow colorisation}
+
+The employment of optical flow has been proved to be effective in many machine learning applications as a tool to capture and effectively encode motion cues from moving objects. In this work, the warped optical flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
 
 So, the employed method can be decomposed into two main steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
 	\item A convolutional neural network, which performs the warp flow colorisation and will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
-	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner; we also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to two ConvLSTMs.
+	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner.
 \end{enumerate}
 
-\subsection{WFCNet}
+We also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to two ConvLSTMs.
+
+\subsubsection{WFCNet}
 
 \begin{figure*}
 	\begin{center}
@@ -159,7 +169,7 @@ Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid funct
 	\caption{WFCNet detailed structure}
 \end{table}
 
-\subsection{Training WFCNet}
+\subsubsection{Training WFCNet}
 \label{par:TrainingWFCNet}
 
 The aim of the WFCNet block is to learn a mapping from input warp flow frames to output RGB frames.
@@ -183,7 +193,7 @@ The whole training procedure consists in two main stages:
 \end{enumerate}
 It should be noted the performances of this architecture are not interesting \textit{per se}, since we are only interested in later reusing the WFCNet block in another network better suited for the action recognition task, i.e. the RGB network. However, we qualitatively observed to be present a positive correlation between high performances of this architecture and high performances of WFCNet in conjunction with the RGB network: so we employ this multi stage training for this particular reason.
 
-\subsection{Single-Stream RGB network}
+\subsubsection{RGB network}
 
 \begin{figure*}
 	\begin{center}
@@ -200,7 +210,7 @@ The structure of the network is represented in figure \ref{fig:SingleStream} and
 \begin{enumerate}
 	\item A WFCNet module, which is pre-trained in a previous stage as described in the paragraph \ref{par:TrainingWFCNet} and it is used to infer the RGB frames starting from warp flow frames;
 	\item a ResNet-34 pre-trained on ImageNet;
-	\item an attention mechanism, as described in paragraph \ref{par:AttentionModel}, which is used to extract features with spatial attention $f_{SA}$ from the convolutional backbone;
+	\item an attention mechanism, as described in paragraph \ref{par:new_am}, which is used to extract features with spatial attention $f_{SA}$ from the convolutional backbone;
 	\item a ConvLSTM which is used to model the temporal and spatial correlations of the extracted feature maps with spatial attention;
 	\item an average pooling layer followed by a fully connected layer.
 \end{enumerate}
@@ -230,27 +240,33 @@ Being this a classification problem, the \textit{Cross Entropy Loss} is employed
 
 During the training phase, the WFCNet block is always used in inference mode; the training is performed in two stages:
 \begin{enumerate}
-	\item In the first stage, the final fully connected layer and the ConvLSTM cell are trained, while the weights of the rest of the network are kept frozen;
-	\item In the second stage, besides fine tuning the final fully connected layer and the ConvLSTM cell, also the last ``macro block'' of the backbone and the hidden fully connected layer used for extracting the CAMs are fine tuned.
+	\item In the first stage, the final fully connected layer, the ConvLSTM cell and the attention mechanism are trained, while the weights of the rest of the network are kept frozen;
+	\item In the second stage, besides fine tuning the aforementioned blocks, also the last ``macro block'' of the backbone is fine tuned.
 \end{enumerate}
 
 \subsection{Two-Stream RGB network}
 
 \begin{figure*}
 	\begin{center}
-		\includegraphics[width=\textwidth]{schemi/two_stream1_img.pdf}		
+		\includegraphics[width=\textwidth]{schemi/two_stream2_img.pdf}		
 	\end{center}
 	\caption{Two-stream RGB network}
 	\label{fig:TwoStream}
 \end{figure*}
 
-We believe that, in order to perform the action recognition task in the first person point of view, the warp flow may not be sufficient  by itself to achieve high performances, but the appearances of the objects may play an important role as well. In fact, no special equipment is used at collection time to obtain the warped optical flow: computing the warped optical flow can be seen as projecting the original data in another space where movement is highlighted and appearance is discarded. Therefore we argue that the warp flow helps deep learning models in encoding motion in an effectively way, but at the same time, the appearance of the object is useful data that would be discarded if only warp flow frames were employed. For this reason, we propose a two-stream network featuring a shared backbone.
+We believe that, in order to perform the action recognition task in the first person point of view, the warp flow may not be sufficient by itself to achieve high performances, but the appearances of the objects may play an important role as well. In fact, no special equipment is used at collection time to obtain the warped optical flow: computing the warped optical flow can be seen as projecting the original data in another space where movement is highlighted and appearance is discarded. Therefore we argue that the warp flow helps deep learning models in modelling motion in an effectively way, but at the same time, the appearance of the object is useful data that would be discarded if only warp flow frames were employed. For this reason, we propose a network capable of handling both RGB frames and warp flow frames.
 
-This architecture is represented in figure \ref{fig:TwoStream} and is very similar to the previous variant: it features a shared backbone pre-trained on ImageNet and it is fed with both RGB and warp flow frames. This is possible because the warp flow frames are actually processed first by WFCNet, which is used to infer RGB images starting from warp flow frames. An attention mechanism is also employed on the output features of the backbone as explained in paragraph \ref{par:AttentionModel}.
+This architecture is represented in figure \ref{fig:TwoStream} and is very similar to the previous variant: it features a shared ResNet-34 pre-trained on ImageNet which is fed with both RGB and warp flow frames. This is possible because the warp flow frames are actually processed first by WFCNet, which is used to infer RGB images starting from warp flow frames.
 
-Two separate ConvLSTM cells are employed: one cell operates on the feature extracted by the backbone from the RGB frames, the other on the feature extracted from the warp flow frames. Then, after being reduced by an average pooling layer, the output features of the two ConvLSTM cells are concatenated, and a fully connected layer is employed to compute the class scores.
+We then employ two distinct attention mechanisms on the output features of the backbone for highlighting relevant spatial locations: one is applied on feature maps extracted from RGB images, the other is applied on feature maps extracted from flow frames. We acknowledge that there is a substantial domain shift between RGB images and colorised warp flow frames: therefore, while the shared backbone is still assumed to be capable of extracting meaningful features from both kinds of inputs, we believe that, in order to perform attention on the extracted feature maps in an effective manner, two distinct modules are required, one for each domains. The way in which features with spatial attention $f_{SA}$ are extracted is described in paragraph \ref{par:new_am}.
+
+After extracting features with spatial attention from an RGB frame and from a warp flow frame, the resulting feature maps are stacked together to produce a single feature map volume of 1024x7x7, which is then fed to a ConvLSTM cell. The structure of the employed ConvLSTM is the same as the one described in the previous paragraph.
+
+We then employ an average pooling layer on the output features of the ConvLSTM and finally a fully connected layer.
 
 After applying the softmax function on the output scores, the \textit{Cross Entropy Loss} is computed.
+
+By using a single ConvLSTM cell acting simultaneously on ``RGB features'' and ``flow features'', besides modelling temporal dependencies of appearance and motion, we believe that correlations between motion and appearance can also be modelled as well.
 
 \section{Experimental results}
 
@@ -266,17 +282,23 @@ In this section we first introduce the dataset that we used in this work, then w
 	\label{fig:GTEA61_boxplot}
 \end{figure}
 
-The GTEA-61 dataset contains several video clips recorded at 15 fps which portray 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data: specifically we always consider the actions performed by subject 2 as validation data.
+The GTEA-61 dataset contains several video clips recorded at 15 fps which portray 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data and we always consider the actions performed by subject 2 as validation data.
 
-In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from approximately less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as the case in which $N = 16$ frames are sampled but the clip is shorter than a second: this may negatively impact the performances of the experimented models.
+In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from approximately less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as the case in which $N = 16$ frames are sampled but the clip is shorter than a second.
 
 \subsection{Ego-RNN}
 
 In this subsection, we present our experiments carried out on the models proposed in \cite{Ego-RNN}. In that work, two separate networks are proposed:
 \begin{itemize}
 	\item an RGB network, which consists of a ResNet backbone pre-trained on ImageNet, an attention mechanism, a ConvLSTM cell and a fully connected layer; the details of these blocks have been introduced in the previous paragraphs;
-	\item a Flow Network, which consists in a ResNet backbone pre-trained on ImageNet
+	\item a Flow Network, which consists of a ResNet backbone pre-trained on ImageNet
 \end{itemize}
+
+\subsubsection{RGB Network}
+
+We trained the RGB network following the same protocol described in \ref{par:Ego-RNN} and using the same hyper-parameters. However, we used a lower number of frames: we sampled $N = 7$ and $N = 16$ frames uniformly spaced in time.
+
+
 
 \subsection{Self supervised task}
 
