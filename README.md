@@ -1,2 +1,74 @@
-# mldl
-Machine Learning and Deep Learning Project
+# First person action recognition
+_Deep learning model for action recognition in first person POV_
+
+This project was developed by Nicolò Bertozzi and Francesco Bianco Morghet for the _Machine Learning and Deep Learning_ course held at Politecnico di Torino.
+
+## General description
+
+![Network structure](paper/schemi/two_stream2_img.png)
+
+The aim of this project is to perform first person action recognition by leveraging both RGB frames and warped optical flow frames.
+
+Our method consists in adapting the RGB network proposed in [1] to warped optical flow frames: to perform this operation, we followed a procedure very similar to the one proposed in [2]. The final proposed network is capable of accepting both RGB frames and warped optical flow frames.
+
+## Run this project
+
+### System Requirements
+
+- Ubuntu 18.04, follow [this gist](https://gist.github.com/francibm97/da7a299d40aa7907175e585fc0182d6f) to install the same python environment used in this project
+ - CUDA enabled GPU with at least 16GB of VRAM
+ - At least 48GB of RAM
+
+Download the GTEA-61 dataset and this project to the same directory. The directory tree should look something like this:
+
+```
+├── GTEA61
+│   ├── flow_x_processed
+│   │   └── ...
+│   ├── flow_y_processed
+│   │   └── ...
+│   └── processed_frames2
+│       └── ...
+└── mldl
+    ├── README.md
+    ├── params
+    │   └── ...
+    └── src
+        ├── run.py
+        └── ...
+```
+
+### Usage
+
+To replicate the 2-stage training procedure of our two-stream model, you should
+1. Train WFCNet
+2. Train the two-stream model
+
+To do so:
+
+1. Perform the first stage training of WFCNet: 
+```
+python3.7 mldl/src/run.py mldl/params/wfcnet_stacked_stage1
+```
+
+2. Replace the `_model_state_dict` property of `wfcnet_stacked_stage2` by entering the output path of the previously trained model. Then run
+```
+python3.7 mldl/src/run.py mldl/params/wfcnet_stacked_stage2
+```
+
+3. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage1` by entering the output path of the trained WFCNet module, then run
+```
+python3.7 mldl/src/run.py mldl/params/wfcnetambi_stacked_14_stage1
+```
+
+4. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage2` to match the output path of the previously trained model. Then run
+```
+python3.7 mldl/src/run.py mldl/params/wfcnetambi_stacked_14_stage2
+```
+
+
+# References
+ - [1] [Attention is all we need: Nailing down object-centric attention for egocentric activity recognition](https://arxiv.org/abs/1807.11794) Swathikiran Sudhakaran and Oswald Lanz, 2018. [[official code]](https://github.com/swathikirans/ego-rnn)
+ - [2] [(DE)²CO: Deep depth colorization](https://arxiv.org/abs/1703.10881) F. M. Carlucci, P. Russo, and B. Caputo, 2017.
+ - [3] [Joint encoding of appearance and motion features with self-supervision for first person action recognition](https://arxiv.org/abs/2002.03982) Mirco Planamente, Andrea Bottino, and Barbara Caputo, 2020.
+ - [4] [Action recognition with improved trajectories](https://hal.inria.fr/hal-00873267v2/document) Heng Wang, 2015.
