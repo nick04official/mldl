@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import MultiStepLR, StepLR
 from models.attention_model import AttentionModel
 from models.two_stream_model import TwoStreamAttentionModel
 from models.resnet.flow_resnet import flow_resnet34
-from models.wfcnet import WFCNetResnet, WFCNetAttentionModel, WFCNetAttentionModelTwoHeads
+from models.wfcnet import WFCNetResnet, WFCNetAttentionModel, WFCNetAttentionModelBi
 
 from torch.nn import CrossEntropyLoss
 

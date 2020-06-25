@@ -270,7 +270,7 @@ class WFCNetAttentionModel(nn.Module):
 class WFCNetAttentionModelBi(nn.Module):
 
     def __init__(self, wfcnet_in_channels=10):
-        super(WFCNetNewAttentionModelBi, self).__init__()
+        super(WFCNetAttentionModelBi, self).__init__()
         self.wfcnet = WFCNet(in_channels=wfcnet_in_channels)
         self.attention_model = NewAttentionModelBi()
 
