@@ -15,7 +15,7 @@ Our method consists in adapting the RGB network proposed in [1] to warped optica
 
 ### System Requirements
 
-- Ubuntu 18.04, follow [this gist](https://gist.github.com/francibm97/da7a299d40aa7907175e585fc0182d6f) to install the same python environment used in this project
+ - Ubuntu 18.04, follow [this gist](https://gist.github.com/francibm97/da7a299d40aa7907175e585fc0182d6f) to install the same python environment used in this project
  - CUDA enabled GPU with at least 16GB of VRAM
  - At least 48GB of RAM
 
@@ -51,23 +51,23 @@ To do so:
 python3.7 mldl/src/run.py mldl/params/wfcnet_stacked_stage1
 ```
 
-2. Replace the `_model_state_dict` property of `wfcnet_stacked_stage2` by entering the output path of the previously trained model. Then run
+2. Replace the `_model_state_dict` property of `wfcnet_stacked_stage2` by entering the output path of the previously trained model, then run:
 ```
 python3.7 mldl/src/run.py mldl/params/wfcnet_stacked_stage2
 ```
 
-3. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage1` by entering the output path of the trained WFCNet module, then run
+3. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage1` by entering the output path of the trained WFCNet module, then run:
 ```
 python3.7 mldl/src/run.py mldl/params/wfcnetambi_stacked_14_stage1
 ```
 
-4. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage2` to match the output path of the previously trained model. Then run
+4. Replace the `_model_state_dict` property of `wfcnetambi_stacked_14_stage2` to match the output path of the previously trained model, then run:
 ```
 python3.7 mldl/src/run.py mldl/params/wfcnetambi_stacked_14_stage2
 ```
 
-
 # References
+
  - [1] [Attention is all we need: Nailing down object-centric attention for egocentric activity recognition](https://arxiv.org/abs/1807.11794) Swathikiran Sudhakaran and Oswald Lanz, 2018. [[official code]](https://github.com/swathikirans/ego-rnn)
  - [2] [(DE)²CO: Deep depth colorization](https://arxiv.org/abs/1703.10881) F. M. Carlucci, P. Russo, and B. Caputo, 2017.
  - [3] [Joint encoding of appearance and motion features with self-supervision for first person action recognition](https://arxiv.org/abs/2002.03982) Mirco Planamente, Andrea Bottino, and Barbara Caputo, 2020.
