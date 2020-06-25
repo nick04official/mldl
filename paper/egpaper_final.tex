@@ -50,6 +50,7 @@ S277910\\
 
 
 \begin{abstract}
+	In this work, we will explore a number of methods for tackling the action recognition task in the first person point of view. Starting from Ego-RNN, we will first experiment the effectiveness and the limits of the attention mechanism when applied on RGB frames; we will also evaluate the temporal network applied on warped optical flow frames and the two-stream approach proposed in Ego-RNN. Then, we will explore the power of an IDT-based self supervised task when added to the RGB network. Finally, we will try to replicate the promising results achieved by the RGB network enriched with the attention mechanism on colorised warped optical flow frames; after that, we will also propose a double input network capable of jointly handling RGB frames and colorised warped optical flow frames.
 \end{abstract}
 
 
@@ -138,7 +139,7 @@ So, the employed method can be decomposed into two main steps, which are briefly
 	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner.
 \end{enumerate}
 
-We also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to two ConvLSTMs.
+We also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to a ConvLSTM.
 
 \subsubsection{WFCNet}
 
@@ -158,7 +159,7 @@ The upsampling of the residual input is performed instead by applying a nearest 
 
 These basic blocks are grouped together in blocks that we can call macro blocks. It should be noted that the downsampling or upsampling are performed only by the first convolutional layer of each macro block. The downsampling is the result of the adoption of a convolution with a stride of 2, kernel size of 3 and padding of 1; on the other hand, the upsampling is performed using a nearest neighbour resizing followed by a convolutional filter with a stride 1, kernel size of 3 and padding of 1 on every side. 
 
-This structure with gradual downsampling followed by a gradual upsampling allows for the extraction of RGB images with semantic segmentation for hands and objects involved in the action, while at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
+This structure with gradual downsampling followed by a gradual upsampling allows the extraction of RGB images with semantic segmentation for hands and objects involved in the action, while at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
 
 Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pre-trained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pre-trained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
 
@@ -191,9 +192,10 @@ The whole training procedure consists in two main stages:
 	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; the weights of WFCNet are randomly initialised using the uniform distribution according to the Kaiming procedure described in \cite{he2015delving}. Only the weights of WFCNet and the weights of the final fully connected layers are trained;
 	\item In this second stage, besides fine tuning the weights of WFCNet and the final fully connected layer, also the weights of the very last ``macro block'' of the ResNet-34 are fine tuned: in this way, the performances of the whole architecture are improved.
 \end{enumerate}
-It should be noted the performances of this architecture are not interesting \textit{per se}, since we are only interested in later reusing the WFCNet block in another network better suited for the action recognition task, i.e. the RGB network. However, we qualitatively observed to be present a positive correlation between high performances of this architecture and high performances of WFCNet in conjunction with the RGB network: so we employ this multi stage training for this particular reason.
+It should be noted that the performances of this architecture are not interesting \textit{per se}, since we are only interested in later reusing the WFCNet block in another network better suited for the action recognition task, i.e. the RGB network. However, we qualitatively observed to be present a positive correlation between high performances of this architecture and high performances of WFCNet in conjunction with the RGB network: so we employ this multi stage training for this particular reason.
 
-\subsubsection{RGB network}
+\subsection{RGB network}
+\label{par:our_rgb_network}
 
 \begin{figure*}
 	\begin{center}
@@ -244,13 +246,14 @@ During the training phase, the WFCNet block is always used in inference mode; th
 	\item In the second stage, besides fine tuning the aforementioned blocks, also the last ``macro block'' of the backbone is fine tuned.
 \end{enumerate}
 
-\subsection{Two-Stream RGB network}
+\subsection{Two-input network}
+\label{par:our_two_stream}
 
 \begin{figure*}
 	\begin{center}
 		\includegraphics[width=\textwidth]{schemi/two_stream2_img.pdf}		
 	\end{center}
-	\caption{Two-stream RGB network}
+	\caption{Two-input network}
 	\label{fig:TwoStream}
 \end{figure*}
 
@@ -266,11 +269,15 @@ We then employ an average pooling layer on the output features of the ConvLSTM a
 
 After applying the softmax function on the output scores, the \textit{Cross Entropy Loss} is computed.
 
-By using a single ConvLSTM cell acting simultaneously on ``RGB features'' and ``flow features'', besides modelling temporal dependencies of appearance and motion, we believe that correlations between motion and appearance can also be modelled as well.
+By using a single ConvLSTM cell acting simultaneously on ``RGB features'' and ``flow features'', we think that, besides modelling temporal dependencies of appearance and motion, correlations between motion and appearance can also be modelled as well.
+
+We use the same training protocol as the one used for the single stream RGB network, which consists of two stages.
+
+To summarise, the strength of our approach reside in the fact that a single backbone is used to extract features from both RGB frames and flow frames, therefore allowing a more lightweight model at inference time, and that a single ConvLSTM is applied jointly on flow frames and RGB frames; the main weakness is instead mainly due to the rather complex training procedure.
 
 \section{Experimental results}
 
-In this section we first introduce the dataset that we used in this work, then we describe the experiments that we performed on it.
+In this section we first introduce the dataset that we used in this work, then we describe the experiments that we performed on it. Unless specified otherwise, we always repeated each experiments three times and then averaged the results.
 
 \subsection{Dataset}
 
@@ -296,13 +303,91 @@ In this subsection, we present our experiments carried out on the models propose
 
 \subsubsection{RGB Network}
 
-We trained the RGB network following the same protocol described in \ref{par:Ego-RNN} and using the same hyper-parameters. However, we used a lower number of frames: we sampled $N = 7$ and $N = 16$ frames uniformly spaced in time.
+We trained the RGB network following the same 2-stage protocol and using the same hyperparameters of \cite{Ego-RNN}. However, we used a lower number of frames: we sampled $N = 7$ and $N = 16$ frames uniformly spaced in time.
 
+We also replaced the attention mechanism with the one described in paragraph \ref{par:new_am}: to initialise the attention module, we sampled its weights from a normal distribution with $\mu = 0$ and $\sigma = .05$, which is close to be a Xavier initialisation; we obviously found out that missing this step and initialising the weights in a bad manner would almost completely cancel the performance boost given by this mechanism. We trained this new attention mechanism since stage 1, where instead the attention mechanism in \cite{Ego-RNN} is fine tuned only in stage 2.
 
+\vspace{12pt} \noindent
+\begin{tabular}{l|r}
+	Network & Mean Validation Accuracy \\
+	\hline
+	RGB w/ NOCAM @ 7 & 54.31\% \\
+	RGB w/ CAM @ 7 & 59.19\% \\
+	RGB w/ NEW A.M. @ 7 & 59.90\% \\
+	\hline
+	RGB w/ NOCAM @ 16 & 56.32\% \\
+	RGB w/ CAM @ 16 & 66.66\% \\
+	RGB w/ NEW A.M. @ 16 & 65.51\% \\
+\end{tabular} \vspace{6pt}
+
+We can see that the new proposed attention mechanism works as effectively as the one proposed in \cite{Ego-RNN}. We think that this has partially to do with the given dataset: all samples share a very similar setting (a kitchen counter with almost the same objects in the background among all scenes), and so, a stateless classifier is not capable of distinguishing one action from the other. As a result, the same neuron is used to compute the CAM among all scenes, hence why using one single neuron in the attention mechanism yields to the same results.
+
+\subsubsection{Flow Network}
+
+We trained the Flow network as done in \cite{Ego-RNN} using a single stack of 5 warp flow frames for each sample, and we got a mean accuracy of 40.52\% on the validation set. When we adopted the suggested validation strategy which consists in using 5 stacks of warp flow frames for each samples instead of 1, and then averaging the scores of the fully connected layer, we got a mean validation accuracy of 48.85\%, which is in line with the value reported in the original paper.
+
+\subsubsection{Two-Stream}
+
+Finally, following the same strategy and the same hyperparameters described in \cite{Ego-RNN}, we trained the two-stream model.
+
+\vspace{12pt} \noindent
+\begin{tabular}{l|r}
+	Network & Mean Validation Accuracy \\
+	\hline
+	Two-stream @ 7 & 58.90\% \\
+	Two-stream @ 16 & 75\%
+\end{tabular} \vspace{6pt}
 
 \subsection{Self supervised task}
 
+\subsection{Proposed method}
 
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/cams_img.pdf}		
+	\end{center}
+	\caption{Cam visualisations, before and after adding the MS task}
+	\label{fig:cams}
+\end{figure}
+
+\subsubsection{Training WFCNet}
+
+We trained WFCNet, i.e. the warp flow colorisation block, according to the protocol described in paragraph \ref{par:TrainingWFCNet}.
+
+We used 7 frames/stacks for each sample: we experiment with either single warp flow frames and stacks of 5 warp flow frames. For the stage 1, we used the Adam optimizer with a batch size of 16, weight decay of 4e-5 and epsilon of 1e-4. We used a learning rate of 1e-2, which was multiplied by a coefficient .995 every epoch, we trained for 100 epochs. For the stage 2, we used the same hyperparameters, but we reduced the initial learning rate to 0.25e-4.
+
+Again, we performed three runs for each variant, and for the next steps, we used the weights of the WFCNet blocks belonging to the best performing runs.
+
+\subsubsection{RGB Network with colorised warp flow frames}
+
+In order to train the RGB network with colorised warp flow frames, we followed the same strategy described in paragraph \ref{par:our_rgb_network}. Specifically, for stage 1 we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4.  We used a learning rate of 1e-2, which was divided by 10 after 50 and 100 epochs. We trained for 120 epochs. For stage 2, we lowered the initial learning rate to 1e-4 and we divided it by 4 at epochs 30, 50 and 75; we trained for 120 epochs.
+
+\vspace{12pt} \noindent
+\begin{tabular}{l|r}
+	Network & Val. Accuracy \\
+	\hline
+	WFCNet single -> RGBNet @ 7 & 26.43\% \\
+	WFCNet single -> RGBNet @ 14 & 28.16\% \\
+	\hline
+	WFCNet stack of 5 -> RGBNet @ 7 & 35.34\% \\
+	WFCNet stack of 5 -> RGBNet @ 14 & 33.04\% \\
+\end{tabular} \vspace{6pt}
+
+The results are underwhelming: the warp flow frames are somehow useful to classify the action, but either the loss in resolution and detail is too dramatic to confidently classify the involved action or our proposed network can not exploit the warp flow frames up to their full potential.
+
+We also acknowledge that our results are inferior to the ones obtained with the temporal network proposed in \cite{Ego-RNN}: our hypothesis is that, by training the whole network as it is done \cite{Ego-RNN}, greater results can be achieved than just fine tuning the last layer of the backbone as it is done in this RGB network.
+
+\subsubsection{Two-input network}
+
+We finally tested our two-input network. In the first stage, we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4; we used a learning rate of 1e-3, which was halved after 50; we trained for 100 epochs. For the second stage, we lowered the initial learning rate to 1e-4, we halved it after 50 epochs and we trained for 100 epochs.
+
+\vspace{12pt} \noindent
+\begin{tabular}{l|r}
+	Network & M. V. Accuracy \\
+	\hline
+	Stack of 5 + RGB -> RGBNet @ 7 & \% \\
+    Stack of 5 + RGB -> RGBNet @ 14 & 71.83\% \\
+\end{tabular}
 
 \section{Conclusions}
 
