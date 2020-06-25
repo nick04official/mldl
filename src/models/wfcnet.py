@@ -6,7 +6,7 @@ from torch import nn
 from torch.autograd import Variable
 
 from models.resnet.resnet import resnet34
-from models.attention_model import AttentionModel, AttentionModelTwoHeads
+from models.attention_model import AttentionModel, NewAttentionModel, NewAttentionModelBi
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -220,7 +220,7 @@ class WFCNetAttentionModel(nn.Module):
     def __init__(self, wfcnet_in_channels=10):
         super(WFCNetAttentionModel, self).__init__()
         self.wfcnet = WFCNet(in_channels=wfcnet_in_channels)
-        self.attention_model = AttentionModel(no_cam=True)
+        self.attention_model = NewAttentionModel()
 
     def forward(self, x):
         wfc = Variable(torch.zeros(x.size(0), x.size(1), 3, 224, 224).cuda())
@@ -267,12 +267,12 @@ class WFCNetAttentionModel(nn.Module):
         else:
             self._load_weights_path(self, file_path)
 
-class WFCNetAttentionModelTwoHeads(nn.Module):
+class WFCNetAttentionModelBi(nn.Module):
 
     def __init__(self, wfcnet_in_channels=10):
-        super(WFCNetAttentionModelTwoHeads, self).__init__()
+        super(WFCNetNewAttentionModelBi, self).__init__()
         self.wfcnet = WFCNet(in_channels=wfcnet_in_channels)
-        self.attention_model = AttentionModelTwoHeads()
+        self.attention_model = NewAttentionModelBi()
 
     def forward(self, rgb, flow):
         wfc = Variable(torch.zeros(flow.size(0), flow.size(1), 3, 224, 224).cuda())
