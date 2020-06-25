@@ -13,10 +13,6 @@ from datasets import DatasetRGB, DatasetFlow, DatasetRGBFlow, DatasetMMAPS, Data
 from spatial_transforms import (Compose, ToTensor, CenterCrop, Scale, Normalize, MultiScaleCornerCrop,
                                 RandomHorizontalFlip, Binarize)
 
-from models.attention_model import AttentionModel
-from models.two_stream_model import TwoStreamAttentionModel
-from models.resnet.flow_resnet import flow_resnet34
-
 from utils.trainer import train_model, forward_rgb, forward_rgbmmaps, forward_flow, forward_rgbflow, forward_flowmultiple, forward_rgbflowmultiple
 
 def main(configs):

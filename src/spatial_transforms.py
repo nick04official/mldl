@@ -1,3 +1,5 @@
+# Most of the code from https://github.com/swathikirans/ego-rnn/blob/master/spatial_transforms.py
+
 import random
 import math
 import numbers
