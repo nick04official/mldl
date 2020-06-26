@@ -279,6 +279,8 @@ To summarise, the strength of our approach reside in the fact that a single back
 
 In this section we first introduce the dataset that we used in this work, then we describe the experiments that we performed on it. Unless specified otherwise, we always repeated each experiments three times and then averaged the results.
 
+Throughout our experiments, we preprocess the RGB frames according to the following protocol: the long side of the image is resized to 256 pixels, then a random 244 square crop is performed, with a random scaling among \texttt{[1, 0.875, 0.75, 0.65625]}; finally, each channel is normalised on the means and standard deviations of ImageNet.
+
 \subsection{Dataset}
 
 \begin{figure}
@@ -320,7 +322,7 @@ We also replaced the attention mechanism with the one described in paragraph \re
 	RGB w/ NEW A.M. @ 16 & 65.51\% \\
 \end{tabular} \vspace{6pt}
 
-We can see that the new proposed attention mechanism works as effectively as the one proposed in \cite{Ego-RNN}. We think that this has partially to do with the given dataset: all samples share a very similar setting (a kitchen counter with almost the same objects in the background among all scenes), and so, a stateless classifier is not capable of distinguishing one action from the other. As a result, the same neuron is used to compute the CAM among all scenes, hence why using one single neuron in the attention mechanism yields to the same results.
+We can see that the new proposed attention mechanism works as effectively as the one proposed in \cite{Ego-RNN}. We think that this has partially to do with the given dataset: all samples share a very similar setting (a kitchen counter with almost always the same objects in the background across all scenes), and so, a stateless classifier is not capable of distinguishing one action from the other. As a result, the same neuron is used to compute the CAM among all scenes, hence why using one single neuron in the attention mechanism yields to the same results.
 
 \subsubsection{Flow Network}
 
@@ -339,57 +341,6 @@ Finally, following the same strategy and the same hyperparameters described in \
 \end{tabular} \vspace{6pt}
 
 \subsection{Self supervised task}
-
-\subsection{Proposed method}
-
-\begin{figure}
-	\begin{center}
-		\includegraphics[width=\linewidth]{grafici/cams_img.pdf}		
-	\end{center}
-	\caption{Cam visualisations, before and after adding the MS task}
-	\label{fig:cams}
-\end{figure}
-
-\subsubsection{Training WFCNet}
-
-We trained WFCNet, i.e. the warp flow colorisation block, according to the protocol described in paragraph \ref{par:TrainingWFCNet}.
-
-We used 7 frames/stacks for each sample: we experiment with either single warp flow frames and stacks of 5 warp flow frames. For the stage 1, we used the Adam optimizer with a batch size of 16, weight decay of 4e-5 and epsilon of 1e-4. We used a learning rate of 1e-2, which was multiplied by a coefficient .995 every epoch, we trained for 100 epochs. For the stage 2, we used the same hyperparameters, but we reduced the initial learning rate to 0.25e-4.
-
-Again, we performed three runs for each variant, and for the next steps, we used the weights of the WFCNet blocks belonging to the best performing runs.
-
-\subsubsection{RGB Network with colorised warp flow frames}
-
-In order to train the RGB network with colorised warp flow frames, we followed the same strategy described in paragraph \ref{par:our_rgb_network}. Specifically, for stage 1 we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4.  We used a learning rate of 1e-2, which was divided by 10 after 50 and 100 epochs. We trained for 120 epochs. For stage 2, we lowered the initial learning rate to 1e-4 and we divided it by 4 at epochs 30, 50 and 75; we trained for 120 epochs.
-
-\vspace{12pt} \noindent
-\begin{tabular}{l|r}
-	Network & Val. Accuracy \\
-	\hline
-	WFCNet single -> RGBNet @ 7 & 26.43\% \\
-	WFCNet single -> RGBNet @ 14 & 28.16\% \\
-	\hline
-	WFCNet stack of 5 -> RGBNet @ 7 & 35.34\% \\
-	WFCNet stack of 5 -> RGBNet @ 14 & 33.04\% \\
-\end{tabular} \vspace{6pt}
-
-The results are underwhelming: the warp flow frames are somehow useful to classify the action, but either the loss in resolution and detail is too dramatic to confidently classify the involved action or our proposed network can not exploit the warp flow frames up to their full potential.
-
-We also acknowledge that our results are inferior to the ones obtained with the temporal network proposed in \cite{Ego-RNN}: our hypothesis is that, by training the whole network as it is done \cite{Ego-RNN}, greater results can be achieved than just fine tuning the last layer of the backbone as it is done in this RGB network.
-
-\subsubsection{Two-input network}
-
-We finally tested our two-input network. In the first stage, we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4; we used a learning rate of 1e-3, which was halved after 50; we trained for 100 epochs. For the second stage, we lowered the initial learning rate to 1e-4, we halved it after 50 epochs and we trained for 100 epochs.
-
-\vspace{12pt} \noindent
-\begin{tabular}{l|r}
-	Network & M. V. Accuracy \\
-	\hline
-	Stack of 5 + RGB -> RGBNet @ 7 & \% \\
-    Stack of 5 + RGB -> RGBNet @ 14 & 71.83\% \\
-\end{tabular}
-
-\section{Conclusions}
 
 \begin{table}[h!]
 	\begin{center}
@@ -419,6 +370,73 @@ We finally tested our two-input network. In the first stage, we used the Adam op
 	\end{center}	
 	\caption{Regression}
 \end{table}
+
+\subsection{Proposed method}
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/cams_img.pdf}		
+	\end{center}
+	\caption{Cam visualisations, before and after adding the MS task}
+	\label{fig:cams}
+\end{figure}
+
+\subsubsection{Training WFCNet}
+
+We trained WFCNet, i.e. the warp flow colorisation block, according to the protocol described in paragraph \ref{par:TrainingWFCNet}.
+
+We used 7 frames/stacks for each sample: we experiment with either single warp flow frames and stacks of 5 warp flow frames. For the stage 1, we used the Adam optimizer with a batch size of 16, weight decay of 4e-5 and epsilon of 1e-4. We used a learning rate of 1e-2, which was multiplied by a coefficient .995 every epoch, we trained for 100 epochs. For the stage 2, we used the same hyperparameters, but we reduced the initial learning rate to 0.25e-4.
+
+Again, we performed three runs for each variant, and for the next steps, we used the weights of the WFCNet blocks belonging to the best performing runs.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/wfcnet_color_img.pdf}		
+	\end{center}
+	\caption{Warped optical flow colorisation performed on stacks of 5 warp flow frames}
+	\label{fig:wfcnet_color_img}
+\end{figure}
+
+In figure \ref{fig:wfcnet_color_img}, we show what the WFCNet block produces when it is applied to stacks of 5 consecutive warped optical flow frames: we can see that still objects are removed and melted in a single-colour background, and only hands, arms and moving objects are retained. Furthermore, fast moving objects appear to be brighter than slowly moving objects; however, given that an RGB frame is produced from 5 consecutive warp flow frames, fast movements may be represented inaccurately: as showcased in the last sample, the hands of the subject and the manipulated object bleed into a single bright blob, making the action recognition more challenging than desired.
+
+\subsubsection{RGB Network with colorised warp flow frames}
+
+In order to train the RGB network with colorised warp flow frames, we followed the same strategy described in paragraph \ref{par:our_rgb_network}. Specifically, for stage 1 we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4.  We used a learning rate of 1e-2, which was divided by 10 after 50 and 100 epochs. We trained for 120 epochs. For stage 2, we lowered the initial learning rate to 1e-4 and we divided it by 4 at epochs 30, 50 and 75; we trained for 120 epochs.
+
+\vspace{12pt} \noindent
+\begin{tabular}{l|r}
+	Network & Val. Accuracy \\
+	\hline
+	WFCNet single -> RGBNet @ 7 & 26.43\% \\
+	WFCNet single -> RGBNet @ 14 & 28.16\% \\
+	\hline
+	WFCNet stack of 5 -> RGBNet @ 7 & 35.34\% \\
+	WFCNet stack of 5 -> RGBNet @ 14 & 33.04\% \\
+\end{tabular} \vspace{6pt}
+
+The results are underwhelming: the warp flow frames are somehow useful to classify the action, but either the loss in resolution and detail is too dramatic to confidently classify the involved action or our proposed network can not exploit the warp flow frames up to their full potential.
+
+We also acknowledge that our results are inferior to the ones obtained with the temporal network proposed in \cite{Ego-RNN}: our hypothesis is that, by training the whole network as it is done \cite{Ego-RNN}, greater results can be achieved than just fine tuning the last layer of the backbone as it is done in this RGB network.
+
+\subsubsection{Two-input network}
+
+We finally tested our two-input network. In the first stage, we used the Adam optimizer with a batch size of 32, weight decay of 4e-5 and epsilon of 1e-4; we used a learning rate of 1e-3, which was halved after 50 epochs; we trained for 100 epochs. We trained the second stage for 100 epochs, we lowered the initial learning rate to 1e-4 and we halved it after 50 epochs.
+
+\vspace{12pt} \noindent
+\begin{tabular}{l|rr}
+	Network & Stage 1 & Stage 2 \\
+	\hline
+	Stack of 5 + RGB @ 7 & 52.58\% & 63.22\% \\
+    Stack of 5 + RGB @ 14 & 60.34\% & 71.83\% \\
+\end{tabular} \vspace{6pt}
+
+As it can be seen from the reported results, our two-input variant is able to achieve interesting results: despite being unable of reaching high performances, we believe that our method can exploit warped optical flow in a more effective manner. For instance, while in Ego-RNN there is a substantial accuracy drop when the number of frames is halved, which somehow suggests that probably the ``heavy-lifting'' of the action recognition task is to be attributed to the RGB information, the proposed two-input network is able to maintain an above-60\% accuracy even at 7 frames at the end of the second stage.
+
+\section{Conclusions}
+
+In our work we presented a number of techniques for tackling the first person action recognition task. We first presented the capability of the attention mechanism in boosting the overall performances without requiring a complete retraining of the backbone, and we then later showed how a simpler attention mechanism can be employed without hindering the overall performances. After showcasing the performances achieved by a two-stream model, we experimented with the potentialities offered by self-supervision, which in particular involved an auxiliary task on IDT maps and whose aim is to remove the need of training on optical flow frames. We then decided to further experiment with warp flow frames: by our experimentations, we found out that warp flow frames may not be sufficient alone to solve the given problem, but when instead they are coupled with RGB frames, some interesting results can be achieved.
+
+We finally point out that our proposed models are not production ready: for instance, we found out that the main action can be partially occluded by the central square crop, and therefore we suggest to employ at least a better dimensioned backbone, capable of accepting 16 by 9 frames rather than square frames.
 
 {\small
 \bibliographystyle{ieee_fullname}

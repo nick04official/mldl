@@ -14,6 +14,55 @@ from models.motion_segmentation import MotionSegmentationBlock
 from spatial_transforms import Compose, ToTensor, CenterCrop, Scale, Normalize
 from PIL import Image
 
+
+def get_cam_visualisation(self, resnet, weight_softmax, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
+    if preprocess_for_viz == None:
+        preprocess_for_viz = Compose([
+            Scale(256),
+            CenterCrop(224),
+        ])
+    if preprocess_for_model == None:
+        normalize = Normalize(
+            mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+
+        preprocess_for_model = Compose([
+            Scale(256),
+            CenterCrop(224),
+            ToTensor(),
+            normalize
+        ])
+
+    tensor_image = preprocess_for_model(input_pil_image)
+    pil_image = preprocess_for_viz(input_pil_image)
+
+    logit, feature_conv, _ = resnet(tensor_image.unsqueeze(0).cuda())
+
+    bz, nc, h, w = feature_conv.size()
+    feature_conv = feature_conv.view(bz, nc, h*w)
+
+    h_x = F.softmax(logit, dim=1).data
+    probs, idx = h_x.sort(1, True)
+
+    cam_img = torch.bmm(weight_softmax[idx[:, 0]].unsqueeze(1), feature_conv).squeeze(1)
+    cam_img = F.softmax(cam_img, 1).data
+    cam_img = cam_img.cpu()
+    cam_img = cam_img.reshape(h, w)
+    cam_img = cam_img - torch.min(cam_img)
+    cam_img = cam_img / torch.max(cam_img)
+
+    cam_img = np.uint8(255 * cam_img)
+    img = np.uint8(pil_image)
+
+    output_cam = cv2.resize(cam_img, pil_image.size)
+    heatmap = cv2.applyColorMap(output_cam, cv2.COLORMAP_JET)
+    img = cv2.cvtColor(np.uint8(img), cv2.COLOR_RGB2BGR)
+    
+    result = heatmap * 0.4 + img * 0.6
+    result = cv2.cvtColor(np.uint8(result), cv2.COLOR_BGR2RGB)
+    
+    return Image.fromarray(result)
+
+
 class AttentionModel(nn.Module):
 
     def __init__(self, num_classes=61, mem_size=512, no_cam=False, enable_motion_segmentation=False):
@@ -125,6 +174,9 @@ class AttentionModel(nn.Module):
     def get_class_activation_id(self, inputVariable):
         logit, _, _ = self.resnet(inputVariable)
         return logit
+
+    def get_cam_visualisation(self, input_pil_image, preprocess_for_viz, preprocess_for_model):
+        return get_cam_visualisation(self.resnet, self.weight_softmax, input_pil_image, preprocess_for_viz, preprocess_for_model)
 
 class NewAttentionModel(nn.Module):
 
@@ -322,49 +374,3 @@ class NewAttentionModelBi(nn.Module):
         return {'classifications': feats}
      
 
-def get_cam_visualisation(self, resnet, weight_softmax, input_pil_image, preprocess_for_viz=None, preprocess_for_model=None):
-    if preprocess_for_viz == None:
-        preprocess_for_viz = Compose([
-            Scale(256),
-            CenterCrop(224),
-        ])
-    if preprocess_for_model == None:
-        normalize = Normalize(
-            mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
-
-        preprocess_for_model = Compose([
-            Scale(256),
-            CenterCrop(224),
-            ToTensor(),
-            normalize
-        ])
-
-    tensor_image = preprocess_for_model(input_pil_image)
-    pil_image = preprocess_for_viz(input_pil_image)
-
-    logit, feature_conv, _ = resnet(tensor_image.unsqueeze(0).cuda())
-
-    bz, nc, h, w = feature_conv.size()
-    feature_conv = feature_conv.view(bz, nc, h*w)
-
-    h_x = F.softmax(logit, dim=1).data
-    probs, idx = h_x.sort(1, True)
-
-    cam_img = torch.bmm(weight_softmax[idx[:, 0]].unsqueeze(1), feature_conv).squeeze(1)
-    cam_img = F.softmax(cam_img, 1).data
-    cam_img = cam_img.cpu()
-    cam_img = cam_img.reshape(h, w)
-    cam_img = cam_img - torch.min(cam_img)
-    cam_img = cam_img / torch.max(cam_img)
-
-    cam_img = np.uint8(255 * cam_img)
-    img = np.uint8(pil_image)
-
-    output_cam = cv2.resize(cam_img, pil_image.size)
-    heatmap = cv2.applyColorMap(output_cam, cv2.COLORMAP_JET)
-    img = cv2.cvtColor(np.uint8(img), cv2.COLOR_RGB2BGR)
-    
-    result = heatmap * 0.4 + img * 0.6
-    result = cv2.cvtColor(np.uint8(result), cv2.COLOR_BGR2RGB)
-    
-    return Image.fromarray(result)
