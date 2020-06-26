@@ -110,6 +110,7 @@ To summarise, we can think of a CAM as the result of a linear classifier: given 
 %The limit of the attention mechanism applied on RGB images is that it does not take into account motion information, but it focuses on the appearance of each single frame in a stateless manner. So, despite the deployment of the attention mechanism, in \cite{Ego-RNN} in order to reach state of the art performances, a separate convolutional neural network is trained on stacked warp flow images, and then, a linear classifier is put on top of the output features of the two networks.
 
 \subsection{Motion segmentation task}
+\label{par:ms_task}
 The main idea behind this procedure is the addition of an auxiliary task: given an architecture where first a convolutional neural network extracts feature embeddings from RGB frames and then a ConvLSTM models temporal and infra-spatial correlations of such features, a second task is added to the output of the convolutional neural network with the intention of helping this shared backbone to extract more meaningful features and taking motion into account as well.
 
 In \cite{planamente2020joint}, a motion segmentation task is proposed. To do so, an \textit{improved dense trajectory} (IDT) is associated to each frame; basically, an IDT is a binary map that compensates for camera motion and that, for each pixel, states whether a moving keypoint is present or not. This motion map is used as a ground truth for a motion segmentation task: the output feature maps of the last convolutional layer of the shared backbone are forwarded to a second branch where they are first processed by a convolutional layer and then forwarded to a fully connected layer. This auxiliary task aims to minimise the pixel-by-pixel cross entropy loss between the predicted motion map and the ground truth. Both auxiliary task and main task are trained together, because the role of the auxiliary task is to help the shared backbone to extract better features, in the sense that they are able to take into account motion as well: for this reason, the losses of the auxiliary task and the main task are summed together during training.
@@ -293,7 +294,7 @@ Throughout our experiments, we preprocess the RGB frames according to the follow
 
 The GTEA-61 dataset contains several video clips recorded at 15 fps which portray 7 common activities performed by 4 different subjects in a first person point of view. The actions are further divided into subcategories consisting in verb+object, such as \textit{open tea}, therefore totalling 61 different labels. In this work, we consider a constant split of the labelled data and we always consider the actions performed by subject 2 as validation data.
 
-In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. Unless stated otherwise, during our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from approximately less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as the case in which $N = 16$ frames are sampled but the clip is shorter than a second.
+In figure \ref{fig:GTEA61_boxplot}, the distribution of the lengths of the video clips are represented by means of a pair of box-plots: as it can be seen, even though durations vary greatly, at least 75\% of both training and validation data is below 4 seconds. During our experiments we sample a fixed number of frames uniformly spaced in time. This means that for the great majority of the clips, the time span between two frames is a certain fraction of a second, ranging from approximately less than one-tenth to half a second. However, there are edge cases in which the time elapsed between two frames can be significantly higher or some other cases in which frames are being duplicated, as the case in which $N = 16$ frames are sampled but the clip is shorter than a second.
 
 \subsection{Ego-RNN}
 
@@ -342,6 +343,32 @@ Finally, following the same strategy and the same hyperparameters described in \
 
 \subsection{Self supervised task}
 
+We integrated the self supervised task on the second stage of the RGB network. We applied it on the output feature maps of the backbone, whose volume is 512x7x7: therefore, after resizing and cropping the generated IDT frame at the same location of the RGB frame, we downsampled it to 7x7 pixels.
+
+For the motion segmentation task, we employed the following structure: the ReLu function is applied on the input; then a 1x1 convolution with 100 output planes, stride=1 and no padding, is applied; finally a fully connected layer consisting of output 2 neurons for each output pixel, i.e. a total of 98 output neurons, is employed.
+
+We first adopted a 3x3 convolution, but the current input size is already small and so highly de-correlated, therefore using a 1x1 convolution makes more sense, and also yielded to better results. We first employed a dropout of 0.5 on the output fully connected layer: however, adopting a dropout on the output layer is discouraged and can lead to inaccurate predictions, since the correct output neurons can be prevented to fire; also, this branch is already simple and may not need this further regularisation even if applicable. 
+
+Finally, we tried with one single output neuron for each pixel and minimised the Binary Cross Entropy Loss on the softmax of the output scores. ${BCE = y_i \cdot \log(x) + (1 - y_i) \cdot \log(1 - x_i), y \in \{0, 1\}}$ However, we obtain subpar results, and by using two output neurons for each output pixel, we obtained better results. This may have to do with the fact that, by increasing the size of the fully connected layer, the capacity of the network should increase as well, which may be beneficial in this instance; also, the BCE Loss suffers from numerical instability at certain values of the input, namely when it is close or equal to $0$ or $1$.
+
+Therefore, as suggested in \cite{planamente2020joint}, we treated this auxiliary task as a classification task by computing the per-pixel cross entropy loss on the softmax of the output scores and we summed it to the main classification loss.
+
+After adding the motion segmentation head, we found out that the attention mechanism is more precise in certain scenes, such as the ones depicted in figure \ref{fig:cams}.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/cams_img.pdf}		
+	\end{center}
+	\caption{Cam visualisations, before and after adding the MS task}
+	\label{fig:cams}
+\end{figure}
+
+We also performed a 
+
+\subsection{Self supervised as a regression problem}
+
+In order to treat the self supervised task as a regression problem, we first replaced the activation function. Since two output neurons are employed for each pixel, their value are first summed. We then employed the $\tanh$ activation function since it can provide a steeper gradient than a sigmoid; however, when we squashed the value of $\tanh$ between 0 and 1, we did not observed any performance drop. Finally, we employed the mean square error loss: $$ MSE = \frac{\sum_i (x_i - y_i)^2}{N}, y_i \in \{0, 1\}$$
+
 \begin{table}[h!]
 	\begin{center}
 		\begin{tabular}{lcc|cc}
@@ -372,14 +399,6 @@ Finally, following the same strategy and the same hyperparameters described in \
 \end{table}
 
 \subsection{Proposed method}
-
-\begin{figure}
-	\begin{center}
-		\includegraphics[width=\linewidth]{grafici/cams_img.pdf}		
-	\end{center}
-	\caption{Cam visualisations, before and after adding the MS task}
-	\label{fig:cams}
-\end{figure}
 
 \subsubsection{Training WFCNet}
 
@@ -436,7 +455,7 @@ As it can be seen from the reported results, our two-input variant is able to ac
 
 In our work we presented a number of techniques for tackling the first person action recognition task. We first presented the capability of the attention mechanism in boosting the overall performances without requiring a complete retraining of the backbone, and we then later showed how a simpler attention mechanism can be employed without hindering the overall performances. After showcasing the performances achieved by a two-stream model, we experimented with the potentialities offered by self-supervision, which in particular involved an auxiliary task on IDT maps and whose aim is to remove the need of training on optical flow frames. We then decided to further experiment with warp flow frames: by our experimentations, we found out that warp flow frames may not be sufficient alone to solve the given problem, but when instead they are coupled with RGB frames, some interesting results can be achieved.
 
-We finally point out that our proposed models are not production ready: for instance, we found out that the main action can be partially occluded by the central square crop, and therefore we suggest to employ at least a better dimensioned backbone, capable of accepting 16 by 9 frames rather than square frames.
+We finally point out that our proposed models are not production ready: for instance, we found out that the action can be partially occluded by the central square crop, and therefore we suggest to employ at least a better dimensioned backbone, capable of accepting 16 by 9 frames rather than square frames.
 
 {\small
 \bibliographystyle{ieee_fullname}
