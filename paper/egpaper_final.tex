@@ -306,6 +306,35 @@ We trained the RGB network following the same protocol described in \ref{par:Ego
 
 \section{Conclusions}
 
+\begin{table}[h!]
+	\begin{center}
+		\begin{tabular}{lcc|cc}
+			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
+			\hline
+			0.5&0.001&1e-05&1.57&58.62\\
+			0.5&0.001&4e-05&1.78&57.76\\
+			0.5&0.005&1e-05&1.99&53.45\\
+			0.5&0.005&4e-05&1.79&56.90\\
+			0.5&0.01&1e-05&1.74&59.48\\
+			0.5&0.01&4e-05&1.72&61.21\\
+			1&0.001&1e-05&1.84&54.31\\
+			1&0.001&4e-05&1.86&55.17\\
+			1&0.005&1e-05&2.50&55.17\\
+			1&0.005&4e-05&2.11&53.45\\
+			1&0.01&1e-05&2.17&59.48\\
+			1&0.01&4e-05&2.25&59.48\\
+			5&0.001&1e-05&3.25&58.62\\
+			5&0.001&4e-05&2.40&56.03\\
+			5&0.005&1e-05&4.58&59.48\\
+			5&0.005&4e-05&3.46&58.62\\
+			5&0.01&1e-05&3.21&60.34\\
+			5&0.01&4e-05&3.46&58.62\\
+			\hline
+		\end{tabular}
+	\end{center}	
+	\caption{Regression}
+\end{table}
+
 {\small
 \bibliographystyle{ieee_fullname}
 \bibliography{egbib}
