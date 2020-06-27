@@ -1,7 +1,10 @@
 # First person action recognition
+
+![Python 3.7](https://img.shields.io/badge/Python-3.7-blue.svg?&logo=python&style=flat) ![Pytorch 1.5](https://img.shields.io/badge/Pytorch-1.5-blue.svg?&logo=pytorch&style=flat)
+
 _Deep learning model for action recognition in first person POV_
 
-This project was developed by Nicolò Bertozzi and Francesco Bianco Morghet for the _Machine Learning and Deep Learning_ course held at Politecnico di Torino.
+This project was developed by Nicolò Bertozzi and Francesco Bianco Morghet for the _Machine Learning and Deep Learning_ course at Politecnico di Torino.
 
 ## General description
 
@@ -9,7 +12,7 @@ This project was developed by Nicolò Bertozzi and Francesco Bianco Morghet for 
 
 The aim of this project is to perform first person action recognition by leveraging both RGB frames and warped optical flow frames.
 
-Our method consists in adapting the RGB network proposed in [1] to warped optical flow frames: to perform this operation, we followed a procedure very similar to the one proposed in [2]. The final proposed network is capable of accepting both RGB frames and warped optical flow frames.
+Our method consists in adapting the RGB network proposed in [1] to warped optical flow frames: to perform this operation, we followed a procedure very similar to the one proposed in [2]. The proposed network takes both RGB frames and warped optical flow frames as input data.
 
 ## Run this project
 
