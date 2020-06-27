@@ -398,6 +398,37 @@ In order to treat the self supervised task as a regression problem, we first rep
 	\caption{Regression}
 \end{table}
 
+% cambia la loss
+% rimane invariata l'acc anche rispetto al regression
+\begin{table}[h!]
+	\begin{center}
+		\begin{tabular}{lcc|cc}
+			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
+			\hline
+			0.5&0.001&1e-05&1.81&58.62\\
+			0.5&0.001&4e-05&2.02&57.76\\
+			0.5&0.005&1e-05&1.88&58.62\\
+			0.5&0.005&4e-05&1.92&55.17\\
+			0.5&0.01&1e-05&2.33&50.86\\
+			0.5&0.01&4e-05&2.08&53.45\\
+			1&0.001&1e-05&2.11&60.34\\
+			1&0.001&4e-05&2.27&59.48\\
+			1&0.005&1e-05&2.25&53.45\\
+			1&0.005&4e-05&2.13&55.17\\
+			1&0.01&1e-05&2.36&56.90\\
+			1&0.01&4e-05&2.25&54.31\\
+			5&0.001&1e-05&?&?\\
+			5&0.001&4e-05&?&?\\
+			5&0.005&1e-05&?&?\\
+			5&0.005&4e-05&?&?\\
+			5&0.01&1e-05&?&?\\
+			5&0.01&4e-05&?&?\\
+			\hline
+		\end{tabular}
+	\end{center}	
+	\caption{Classification}
+\end{table}
+
 \subsection{Proposed method}
 
 \subsubsection{Training WFCNet}
