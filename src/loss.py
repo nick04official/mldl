@@ -65,7 +65,6 @@ class MSRegressionClassificationLoss(torch.nn.Module):
 
         # Activation function: I restrain all the values between 0 and 1
         pred_mmap = (torch.tanh(pred_mmap.sum(dim=-1)) + 1) / 2
-        pred_mmap = pred_mmap.view(pred_mmap.size(0), pred_mmap.size(1)*49)
 
         y_mmap = y_mmap.view(y_mmap.size(0), -1)
 
