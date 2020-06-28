@@ -43,9 +43,9 @@ Download the GTEA-61 dataset and this project to the same directory. The directo
 
 ### Usage
 
-To replicate the 2-stage training procedure of our two-stream model, you should
+To replicate the 2-stage training procedure of our model, you should
 1. Train WFCNet
-2. Train the two-stream model
+2. Train the model
 
 To do so:
 
