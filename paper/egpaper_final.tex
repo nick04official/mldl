@@ -66,6 +66,7 @@ In addition, first person images present further difficulties than the ones in t
 
 Dependently on the context, the video classification could be more precise or less precise. A general purpose recognition can be reduced to a simple verb, but it would define the action in progress with subpar accuracy. Instead, a more careful recognition is composed of a verb plus a noun: in fact \emph{open}, \emph{open a door} or \emph{open a jar} are completely different actions.
 
+\vspace{8pt}
 The repository, which contains the project code, the paper, the presentation and all the epochs of the runs reported in the various tables of the document, is public and addressable at \texttt{https://github.com/nick04official/mldl}.
 
 \section{Related works}
@@ -202,11 +203,11 @@ It should be noted that the performances of this architecture are not interestin
 	\begin{center}
 		\includegraphics[width=\textwidth]{schemi/single_stream_img.pdf}		
 	\end{center}
-	\caption{Single-stream RGB network}
+	\caption{Single-input RGB network}
 	\label{fig:SingleStream}
 \end{figure*}
 
-The single-stream RGB network is closely inspired by the RGB network proposed in \cite{Ego-RNN}, but it performs the action recognition task on warp flow frames.
+The single-input RGB network is closely inspired by the RGB network proposed in \cite{Ego-RNN}, but it performs the action recognition task on warp flow frames.
 We believe that, thanks to the WFCNet block, the same pipeline used for RGB images can also be applied on flow images, and therefore its strengths, such the attention mechanism and the temporal encoding capability, can also be experimented on warp flow frames. 
 
 The structure of the network is represented in figure \ref{fig:SingleStream} and it consists of:
@@ -549,6 +550,8 @@ However we want to point out one last remark: both our proposed variant and the 
 In our work we presented a number of techniques for tackling the first person action recognition task. We first presented the capability of the attention mechanism in boosting the overall performances without requiring a complete retraining of the backbone, and we then later showed how a simpler attention mechanism can be employed without hindering the overall performances. After showcasing the performances achieved by a two-stream model, we experimented with the potentialities offered by self-supervision, which in particular involved an auxiliary task on IDT maps and whose aim is to remove the need of training on optical flow frames. We then decided to further experiment with warp flow frames: by our experimentations, we found out that warp flow frames may not be sufficient alone to solve the given problem, but when instead they are coupled with RGB frames, some interesting results can be achieved.
 
 We finally point out that our proposed models are not production ready: for instance, we found out that the action can be partially occluded by the central square crop, and therefore we suggest to employ at least a better dimensioned backbone, capable of accepting 16 by 9 frames rather than square frames.
+
+\vfill
 
 {\small
 \bibliographystyle{ieee_fullname}
