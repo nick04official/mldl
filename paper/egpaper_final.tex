@@ -528,6 +528,16 @@ We finally tested our two-input network. In the first stage, we used the Adam op
 
 As it can be seen from the reported results, our two-input variant is able to achieve interesting results: despite being unable of reaching high performances, we believe that our method can exploit warped optical flow in a more effective manner. For instance, while in Ego-RNN there is a substantial accuracy drop when the number of frames is halved, which somehow suggests that probably the ``heavy-lifting'' of the action recognition task is to be attributed to the RGB information, our proposed two-input network is able to maintain an above-60\% accuracy even at 7 frames at the end of the second stage.
 
+\begin{figure}[h!]
+	\begin{center}
+		\includegraphics[width=\linewidth]{grafici/losses.png}		
+	\end{center}
+	\caption{}
+	\label{fig:losses}
+\end{figure}
+
+However we want to point out one last remark: both our proposed variant and the two-stream model of Ego-RNN exhibit a certain overfitting on the training data as proved by the gaps between training loss and validation loss as shown figure \ref{fig:losses}: so a performance drop is not unimaginable on a more diverse dataset, such as EPIC-KITCHENS-100, hence why probably an higher number of frames may be required to reach the same performances on those more challenging datasets.
+
 \section{Conclusions}
 
 In our work we presented a number of techniques for tackling the first person action recognition task. We first presented the capability of the attention mechanism in boosting the overall performances without requiring a complete retraining of the backbone, and we then later showed how a simpler attention mechanism can be employed without hindering the overall performances. After showcasing the performances achieved by a two-stream model, we experimented with the potentialities offered by self-supervision, which in particular involved an auxiliary task on IDT maps and whose aim is to remove the need of training on optical flow frames. We then decided to further experiment with warp flow frames: by our experimentations, we found out that warp flow frames may not be sufficient alone to solve the given problem, but when instead they are coupled with RGB frames, some interesting results can be achieved.
