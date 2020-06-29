@@ -1,0 +1,3 @@
+modelb_stage2_a | Train Loss 0.88 | Train Accuracy = 73.44% | Valid Loss 1.57 | Valid Accuracy = 57.76%
+modelb_stage2_d | Train Loss 1.01 | Train Accuracy = 73.75% | Valid Loss 1.56 | Valid Accuracy = 59.48%
+modelb_stage2_c | Train Loss 0.88 | Train Accuracy = 75.00% | Valid Loss 1.72 | Valid Accuracy = 59.48%

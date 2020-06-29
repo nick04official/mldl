@@ -1,0 +1,12 @@
+4c3d2e83dd559c0500551ada15f6fce6 | Train Loss 1.06 | Train Accuracy = 70.94% | Valid Loss 1.81 | Valid Accuracy = 58.62%
+b18de7ba1f662d0b644abe05da1a606f | Train Loss 1.50 | Train Accuracy = 60.31% | Valid Loss 2.02 | Valid Accuracy = 57.76%
+dbab885f325d7badb9482e349ec643fc | Train Loss 1.05 | Train Accuracy = 76.88% | Valid Loss 1.88 | Valid Accuracy = 58.62%
+892fb27ffde58b2896437592d5720c81 | Train Loss 1.16 | Train Accuracy = 67.81% | Valid Loss 1.92 | Valid Accuracy = 55.17%
+0893fff9ee122760fdd139a974673957 | Train Loss 1.40 | Train Accuracy = 61.88% | Valid Loss 2.33 | Valid Accuracy = 50.86%
+d051ab06e538fb358b7686eb6f347837 | Train Loss 1.07 | Train Accuracy = 70.62% | Valid Loss 2.08 | Valid Accuracy = 53.45%
+76febf90677b277b110485c08e69a399 | Train Loss 1.21 | Train Accuracy = 74.38% | Valid Loss 2.11 | Valid Accuracy = 60.34%
+112d28f4946a1a7dd80981e2711ec0cd | Train Loss 1.80 | Train Accuracy = 56.88% | Valid Loss 2.27 | Valid Accuracy = 59.48%
+dfe95e1efd2c5a377ab396e6c34449f8 | Train Loss 1.25 | Train Accuracy = 70.31% | Valid Loss 2.25 | Valid Accuracy = 53.45%
+f32ea6c02088d7d265ed4500186d92f7 | Train Loss 1.09 | Train Accuracy = 76.88% | Valid Loss 2.13 | Valid Accuracy = 55.17%
+510759e77f5f7721f09f6e9a8fc8c080 | Train Loss 1.66 | Train Accuracy = 59.69% | Valid Loss 2.36 | Valid Accuracy = 56.90%
+379c8d01e8da0622c3261f0433ab4e94 | Train Loss 1.35 | Train Accuracy = 69.38% | Valid Loss 2.25 | Valid Accuracy = 54.31%
