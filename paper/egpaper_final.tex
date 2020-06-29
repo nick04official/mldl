@@ -50,7 +50,7 @@ S277910\\
 
 
 \begin{abstract}
-	In this work, we will explore a number of methods for tackling the action recognition task in the first person point of view. Starting from Ego-RNN, we will first experiment the effectiveness and the limits of the attention mechanism when applied on RGB frames; we will also evaluate the temporal network applied on warped optical flow frames and the two-stream approach proposed in Ego-RNN. Then, we will explore the power of an IDT-based self supervised task when added to the RGB network. Finally, we will try to replicate the promising results achieved by the RGB network enriched with the attention mechanism on colorised warped optical flow frames; after that, we will also propose a double input network capable of jointly handling RGB frames and colorised warped optical flow frames.
+	In this work, we will explore a number of methods for tackling the action recognition task in the first person point of view. Starting from Ego-RNN, we will first experiment the effectiveness and the limits of the attention mechanism when applied on RGB frames; we will also evaluate the temporal network applied on warped optical flow frames and the two-stream approach proposed in Ego-RNN. Then, we will explore the power of an IDT-based self supervised task when added to the RGB network. Finally, we will try to replicate the promising results achieved by the RGB network on colorised warped optical flow frames by introducing a colorising block, WFCNet; after that, we will also propose a double input network capable of jointly handling RGB frames and colorised warped optical flow frames.
 \end{abstract}
 
 
@@ -363,9 +363,67 @@ After adding the motion segmentation head on the second stage, we found out that
 
 We also performed an hyperparameter optimisation: we trained for 150 epochs using Adam with a epsilon of 1e-4 and a batch size of 32, weight decay of 4e-5 and learning rate of 1e-4, which is divided by 10 after 25 and 75 epochs; for the auxiliary task, we experimented with different learning rates, weight decay and alpha, which is the multiplication factor of the loss of the auxiliary task, and with different numbers of frames.
 
+As it can be seen from tables \ref{tab:ms_tb1} and \ref{tab:ms_tb2}, there is not a substantial change in accuracy when the factor alpha is changed; we observed a gain in accuracy when the number of frames was increased from 7 to 16 frames and when a low learning rate was lower. Due to the rather long training time, we skipped the value of 5 for alpha when doing 16 frames because setting that alpha seemed to be more counterproductive than anything when we tried with 7 frames.
+
+\begin{table}[h!]
+	\vspace*{0pt}
+	\begin{center}
+		\begin{tabular}{lcc|cc}
+			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
+			\hline
+			0.5&0.001&1e-05&1.81&58.62\\
+			0.5&0.001&4e-05&2.02&57.76\\
+			0.5&0.005&1e-05&1.88&58.62\\
+			0.5&0.005&4e-05&1.92&55.17\\
+			0.5&0.01&1e-05&2.33&50.86\\
+			0.5&0.01&4e-05&2.08&53.45\\
+			1&0.001&1e-05&\textbf{2.11}&\textbf{60.34}\\
+			1&0.001&4e-05&2.27&59.48\\
+			1&0.005&1e-05&2.25&53.45\\
+			1&0.005&4e-05&2.13&55.17\\
+			1&0.01&1e-05&2.36&56.90\\
+			1&0.01&4e-05&2.25&54.31\\
+			5&0.001&1e-05&3.93&56.90\\
+			5&0.001&4e-05&3.79&56.03\\
+			5&0.005&1e-05&4.18&54.31\\
+			5&0.005&4e-05&4.03&56.03\\
+			5&0.01&1e-05&4.12&50.86\\
+			5&0.01&4e-05&4.38&46.55\\
+			\hline
+		\end{tabular}
+	\end{center}	
+	\caption{Results with \texttt{CrossEntropyLoss} @ 7 frames}
+	\label{tab:ms_tb1}
+\end{table}
+
+\begin{table}[h!]
+	\begin{center}
+		\begin{tabular}{lcc|cc}
+			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
+			\hline
+			0.5&0.001&1e-05&1.63&66.38\\
+			0.5&0.001&4e-05&1.69&63.79\\
+			0.5&0.005&1e-05&1.61&65.52\\
+			0.5&0.005&4e-05&1.62&65.52\\
+			0.5&0.01&1e-05&1.76&68.10\\
+			0.5&0.01&4e-05&1.54&65.52\\
+			1&0.001&1e-05&1.87&66.38\\
+			1&0.001&4e-05&\textbf{1.80}&\textbf{68.97}\\
+			1&0.005&1e-05&1.90&62.07\\
+			1&0.005&4e-05&1.90&62.93\\
+			1&0.01&1e-05&1.81&63.79\\
+			1&0.01&4e-05&1.96&63.79\\
+			\hline
+		\end{tabular}
+	\end{center}	
+	\caption{Results with \texttt{CrossEntropyLoss} @ 16 frames}
+	\label{tab:ms_tb2}
+	\vspace*{0pt}
+\end{table}
+
 \subsection{Self supervised as a regression problem}
 
-In order to treat the self supervised task as a regression problem, we first replaced the activation function. Since two output neurons are employed for each pixel, their value are first summed. We then employed the $\tanh$ activation function since it can provide a steeper gradient than a sigmoid; however, when we squashed the value of $\tanh$ between 0 and 1, we did not observed any performance drop. Finally, we employed the mean square error loss: $ MSE = \frac{\sum_i (x_i - y_i)^2}{N}, y_i \in \{0, 1\}$. Again as before, we performed a grid search for the hyperparameters.
+In order to treat the self supervised task as a regression problem, we first replaced the activation function. Since two output neurons are employed for each pixel, their value are first summed. We then employed the $\tanh$ activation function since it can provide a steeper gradient than a sigmoid; however, when we squashed the value of $\tanh$ between 0 and 1, we did not observed any performance drop. Finally, we employed the mean square error loss: $ MSE = \frac{\sum_i (x_i - y_i)^2}{N}, y_i \in \{0, 1\}$. Again as before, we performed a grid search for the hyperparameters, and we can draw pretty much the same conclusions as of the classification variant.
 
 \begin{table}[h!]
 	\begin{center}
@@ -396,62 +454,6 @@ In order to treat the self supervised task as a regression problem, we first rep
 	\caption{Results with \texttt{MSRegressionClassificationLoss} @ 7 frames}
 \end{table}
 
-% cambia la loss
-% rimane invariata l'acc anche rispetto al regression
-\begin{table}[h!]
-	\begin{center}
-		\begin{tabular}{lcc|cc}
-			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
-			\hline
-			0.5&0.001&1e-05&1.81&58.62\\
-			0.5&0.001&4e-05&2.02&57.76\\
-			0.5&0.005&1e-05&1.88&58.62\\
-			0.5&0.005&4e-05&1.92&55.17\\
-			0.5&0.01&1e-05&2.33&50.86\\
-			0.5&0.01&4e-05&2.08&53.45\\
-			1&0.001&1e-05&\textbf{2.11}&\textbf{60.34}\\
-			1&0.001&4e-05&2.27&59.48\\
-			1&0.005&1e-05&2.25&53.45\\
-			1&0.005&4e-05&2.13&55.17\\
-			1&0.01&1e-05&2.36&56.90\\
-			1&0.01&4e-05&2.25&54.31\\
-			5&0.001&1e-05&3.93&56.90\\
-			5&0.001&4e-05&3.79&56.03\\
-			5&0.005&1e-05&4.18&54.31\\
-			5&0.005&4e-05&4.03&56.03\\
-			5&0.01&1e-05&4.12&50.86\\
-			5&0.01&4e-05&4.38&46.55\\
-			\hline
-		\end{tabular}
-	\end{center}	
-	\caption{Results with \texttt{CrossEntropyLoss} @ 7 frames}
-\end{table}
-
-\begin{table}[h!]
-	\begin{center}
-		\begin{tabular}{lcc|cc}
-			\textbf{Alpha} & \textbf{Lr} & \textbf{Weight Decay} & \textbf{Loss} & \textbf{Accuracy [\%]}\\
-			\hline
-			0.5&0.001&1e-05&1.63&66.38\\
-			0.5&0.001&4e-05&1.69&63.79\\
-			0.5&0.005&1e-05&1.61&65.52\\
-			0.5&0.005&4e-05&1.62&65.52\\
-			0.5&0.01&1e-05&1.76&68.10\\
-			0.5&0.01&4e-05&1.54&65.52\\
-			1&0.001&1e-05&1.87&66.38\\
-			1&0.001&4e-05&\textbf{1.80}&\textbf{68.97}\\
-			1&0.005&1e-05&1.90&62.07\\
-			1&0.005&4e-05&1.90&62.93\\
-			1&0.01&1e-05&1.81&63.79\\
-			1&0.01&4e-05&1.96&63.79\\
-			\hline
-		\end{tabular}
-	\end{center}	
-	\caption{Results with \texttt{CrossEntropyLoss} @ 16 frames}
-\end{table}
-
-% cambia la loss
-% rimane invariata l'acc anche rispetto al regression
 \begin{table}[h!]
 	\begin{center}
 		\begin{tabular}{lcc|cc}
@@ -474,6 +476,8 @@ In order to treat the self supervised task as a regression problem, we first rep
 	\end{center}	
 	\caption{Results with \texttt{MSRegressionClassificationLoss} @ 16 frames}
 \end{table}
+
+\pagebreak
 
 \subsection{Proposed method}
 
