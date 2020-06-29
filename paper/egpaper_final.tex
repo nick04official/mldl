@@ -88,9 +88,9 @@ In \cite{Ego-RNN}, a ResNet-34, is used to extract feature embeddings from RGB i
 
 However, the aforementioned RGB network focuses on the appearances of each single frame, but it fails to take into account the motion happening in those frames in a effectively manner. To tackle this problem, a separate convolutional neural network can be trained on optical flows images; in \cite{Ego-RNN}, a ResNet-34 trained on warped optical flow images achieves better results than training on optical flow thanks to the compensation of camera motion of the former.
 
-Then, on top of these two trained networks, a linear classifier is used to determine the class label of the given sample: while the classifier is trained on the output features of the two networks, the two networks are fine tuned on the weights obtained in a preceding set of training stages.
+Then, on top of these two trained networks, a linear classifier is used to determine the class label of the given sample: while the classifier is trained on the output features of the two networks, also the two networks are fine tuned.
 
-The main disadvantage of this two-stream approach is that motion information and appearance information are decoupled, and so, since they are treated in two separate networks, any correlations among the two are not taken into account.
+The main disadvantage of this two-stream approach is that motion information and appearance information are decoupled, since they are treated in two separate networks, hence any correlations among the two are not taken into account.
 
 There exist however an attempts to go beyond the two streams approach and to deal with both appearance and motion in a single network by using an auxiliary task, as in the case of \cite{planamente2020joint} where a motion segmentation task is deployed.
 
@@ -126,21 +126,19 @@ As anticipated in \ref{par:AttentionModel}, the attention mechanism can be thoug
 
 The output feature maps of the last convolutional layer of the backbone, whose size is 512x7x7, is our input: there are 49 spatial locations and each one is described by 512 variables. A linear classifier, which is a simple 512 long vector, produces the relevance score for each of the 49 spatial locations; then, the softmax function is applied on the output scores, producing what can be referred to as activation map. Finally, the features with spatial attention $f_{SA}$ are obtained by performing the element-wise product of the input features and the activation map.
 
-To put formally, given the input $f$ and $w$ the weights of the attention mechanism, the output score $s$ for the spatial location $i$ is given by $s(i) = \sum_l w_l f_l(i)$; the activation map $AM$ for spatial location $i$ is then computed as $AM(i) = \frac{e^{s(i)}}{\sum_i e^{s(i)}}$. The feature with spatial attention $f_{SA}$ are then obtained by computing the element-wise product between the input $f$ and the activation map $AM$: $f_{SA} = AM \odot f$.
+To put formally, given the input $f$ and $w$ the weights of the attention mechanism, the output score $s$ for the spatial location $i$ is given by ${s(i) = \sum_l w_l f_l(i)}$; the activation map $AM$ for spatial location $i$ is then computed as ${AM(i) = \frac{e^{s(i)}}{\sum_i e^{s(i)}}}$. The features with spatial attention $f_{SA}$ are then obtained by computing the element-wise product between the input $f$ and the activation map $AM$: ${f_{SA} = AM \odot f}$.
 
 By placing this simplified attention mechanism in the RGB network proposed in \cite{Ego-RNN} (briefly described in \ref{par:Ego-RNN}), we will show that roughly the same performances are achieved.
 
 \subsection{Warp flow colorisation}
 
-The employment of optical flow has been proved to be effective in many machine learning applications as a tool to capture and effectively encode motion cues from moving objects. In this work, the warped optical flow is used since, as it has been introduced in the paragraphs above, it allows for the compensation of camera movements, which is a great factor to take into account in first person videos.
+The employment of optical flow has been proved to be effective in many machine learning applications as a tool to capture and effectively encode motion cues from moving objects. In this work, the warped optical flow is used since, as it has been introduced in the paragraphs above, it enables the compensation of camera movements, which is a great factor to take into account in first person videos.
 
 So, the employed method can be decomposed into two main steps, which are briefly presented here and will be discussed in more details in the following paragraphs:
 \begin{enumerate}
 	\item A convolutional neural network, which performs the warp flow colorisation and will be referred to as WFCNet from this point on, is trained so that a mapping between warp flow frames and generated RGB frames is learnt; 
-	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner.
+	\item Using WFCNet for inferring RGB frames from warp flow frames, a deep neural network consisting in a convolutional backbone, a ConvLSTM, an average pooling layer and a final fully connected layer is trained in a multi stage manner. We also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames.
 \end{enumerate}
-
-We also propose a two stream variant, which consists in a shared backbone, fed with both colorised warp flow frames and original RGB frames, and whose output features are fed to a ConvLSTM.
 
 \subsubsection{WFCNet}
 
@@ -160,9 +158,9 @@ The upsampling of the residual input is performed instead by applying a nearest 
 
 These basic blocks are grouped together in blocks that we can call macro blocks. It should be noted that the downsampling or upsampling are performed only by the first convolutional layer of each macro block. The downsampling is the result of the adoption of a convolution with a stride of 2, kernel size of 3 and padding of 1; on the other hand, the upsampling is performed using a nearest neighbour resizing followed by a convolutional filter with a stride 1, kernel size of 3 and padding of 1 on every side. 
 
-This structure with gradual downsampling followed by a gradual upsampling allows the extraction of RGB images with semantic segmentation for hands and objects involved in the action, while at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: the employment of nearest neighbour for upsampling instead leads to better segmented images, which in turn leads to better overall results.
+This structure with gradual downsampling followed by a gradual upsampling allows the extraction of RGB images with semantic segmentation for hands and objects involved in the action, while at the same time all the other still objects are discarded and melted with the background. In this work, the transposed convolution for upsampling is not employed because its introduction resulted in repeating patterns in the output RGB frames that would not disappear even after many epochs of training: instead the employment of nearest neighbour for upsampling leads to better segmented images, which in turn leads to better overall results.
 
-Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[-1; +1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pre-trained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pre-trained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
+Finally, the output RGB frames of WFCNet are normalised: first the Sigmoid function is applied to every output value in order to get values in the $[0; 1]$ range; then, every channel of each pixel is normalised on the means and standard deviations of ImageNet, which are \texttt{mean=[0.485, 0.456, 0.406]}, \texttt{std=[0.229, 0.224, 0.225]}. The introduction of this block improves the performances of the model and its stability at the beginning of the training because, in the overall training procedure of this network, a ResNet-34 pre-trained on ImageNet is employed. Also, since WFCNet is later employed to colorise frames which are then fed to an RGB network whose backbone is pre-trained on ImageNet, it is important that those generated images are normalised in the correct manner in order to achieve optimal results. By explicitly introducing this block, we can be sure that the generated images meet this requirement.
 
 \begin{table}
 	\input{./tabelle/wfcnet}
@@ -190,7 +188,7 @@ We treat this task as a classification problem, where the aim of the whole archi
 
 The whole training procedure consists in two main stages:
 \begin{enumerate}
-	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; the weights of WFCNet are randomly initialised using the uniform distribution according to the Kaiming procedure described in \cite{he2015delving}. Only the weights of WFCNet and the weights of the final fully connected layers are trained;
+	\item The ResNet-34 is pre-trained on ImageNet and its weights are kept frozen; the weights of WFCNet are randomly initialised using the uniform distribution according to the Kaiming procedure described in \cite{he2015delving}. Only WFCNet and the final fully connected layer are trained;
 	\item In this second stage, besides fine tuning the weights of WFCNet and the final fully connected layer, also the weights of the very last ``macro block'' of the ResNet-34 are fine tuned: in this way, the performances of the whole architecture are improved.
 \end{enumerate}
 It should be noted that the performances of this architecture are not interesting \textit{per se}, since we are only interested in later reusing the WFCNet block in another network better suited for the action recognition task, i.e. the RGB network. However, we qualitatively observed to be present a positive correlation between high performances of this architecture and high performances of WFCNet in conjunction with the RGB network: so we employ this multi stage training for this particular reason.
@@ -345,15 +343,13 @@ Finally, following the same strategy and the same hyperparameters described in \
 
 We integrated the self supervised task on the second stage of the RGB network. We applied it on the output feature maps of the backbone, whose volume is 512x7x7: therefore, after resizing and cropping the generated IDT frame at the same location of the RGB frame, we downsampled it to 7x7 pixels.
 
-For the motion segmentation task, we employed the following structure: the ReLu function is applied on the input; then a 1x1 convolution with 100 output planes, stride=1 and no padding, is applied; finally a fully connected layer consisting of output 2 neurons for each output pixel, i.e. a total of 98 output neurons, is employed.
+For the motion segmentation task, we employed the following structure: the ReLu function is applied on the input; then a 1x1 convolution with 100 output planes, stride=1 and no padding, is applied; finally a fully connected layer is employed and it consists of 2 output neurons for each output pixel, i.e. a total of 98 output neurons.
 
 We first adopted a 3x3 convolution, but the current input size is already small and so highly de-correlated, therefore using a 1x1 convolution makes more sense, and also yielded to better results. We first employed a dropout of 0.5 on the output fully connected layer: however, adopting a dropout on the output layer is discouraged and can lead to inaccurate predictions, since the correct output neurons can be prevented to fire; also, this branch is already simple and may not need this further regularisation even if applicable. 
 
 Finally, we tried with one single output neuron for each pixel and minimised the Binary Cross Entropy Loss on the softmax of the output scores. ${BCE = y_i \cdot \log(x) + (1 - y_i) \cdot \log(1 - x_i), y \in \{0, 1\}}$ However, we obtain subpar results, and by using two output neurons for each output pixel, we obtained better results. This may have to do with the fact that, by increasing the size of the fully connected layer, the capacity of the network should increase as well, which may be beneficial in this instance; also, the BCE Loss suffers from numerical instability at certain values of the input, namely when it is close or equal to $0$ or $1$.
 
-Therefore, as suggested in \cite{planamente2020joint}, we treated this auxiliary task as a classification task by computing the per-pixel cross entropy loss on the softmax of the output scores and we summed it to the main classification loss.
-
-After adding the motion segmentation head, we found out that the attention mechanism is more precise in certain scenes, such as the ones depicted in figure \ref{fig:cams}.
+Therefore, as suggested in \cite{planamente2020joint}, we treated this auxiliary task as a classification task by computing the per-pixel cross entropy loss on the softmax of the output scores and we summed it to the main classification loss: ${L = L_{main} + \alpha L_{ms}, \alpha = 1}$.
 
 \begin{figure}
 	\begin{center}
@@ -363,11 +359,13 @@ After adding the motion segmentation head, we found out that the attention mecha
 	\label{fig:cams}
 \end{figure}
 
-We also performed a 
+After adding the motion segmentation head on the second stage, we found out that the attention mechanism is more precise in certain scenes, such as the ones depicted in figure \ref{fig:cams}.
+
+We also performed an hyperparameter optimisation: we trained for 150 epochs using Adam with a epsilon of 1e-4 and a batch size of 32, weight decay of 4e-5 and learning rate of 1e-4, which is divided by 10 after 25 and 75 epochs; for the auxiliary task, we experimented with different learning rates, weight decay and alpha, which is the multiplication factor of the loss of the auxiliary task, and with different numbers of frames.
 
 \subsection{Self supervised as a regression problem}
 
-In order to treat the self supervised task as a regression problem, we first replaced the activation function. Since two output neurons are employed for each pixel, their value are first summed. We then employed the $\tanh$ activation function since it can provide a steeper gradient than a sigmoid; however, when we squashed the value of $\tanh$ between 0 and 1, we did not observed any performance drop. Finally, we employed the mean square error loss: $$ MSE = \frac{\sum_i (x_i - y_i)^2}{N}, y_i \in \{0, 1\}$$
+In order to treat the self supervised task as a regression problem, we first replaced the activation function. Since two output neurons are employed for each pixel, their value are first summed. We then employed the $\tanh$ activation function since it can provide a steeper gradient than a sigmoid; however, when we squashed the value of $\tanh$ between 0 and 1, we did not observed any performance drop. Finally, we employed the mean square error loss: $ MSE = \frac{\sum_i (x_i - y_i)^2}{N}, y_i \in \{0, 1\}$. Again as before, we performed a grid search for the hyperparameters.
 
 \begin{table}[h!]
 	\begin{center}
@@ -528,7 +526,7 @@ We finally tested our two-input network. In the first stage, we used the Adam op
     Stack of 5 + RGB @ 14 & 60.34\% & 71.83\% \\
 \end{tabular} \vspace{6pt}
 
-As it can be seen from the reported results, our two-input variant is able to achieve interesting results: despite being unable of reaching high performances, we believe that our method can exploit warped optical flow in a more effective manner. For instance, while in Ego-RNN there is a substantial accuracy drop when the number of frames is halved, which somehow suggests that probably the ``heavy-lifting'' of the action recognition task is to be attributed to the RGB information, the proposed two-input network is able to maintain an above-60\% accuracy even at 7 frames at the end of the second stage.
+As it can be seen from the reported results, our two-input variant is able to achieve interesting results: despite being unable of reaching high performances, we believe that our method can exploit warped optical flow in a more effective manner. For instance, while in Ego-RNN there is a substantial accuracy drop when the number of frames is halved, which somehow suggests that probably the ``heavy-lifting'' of the action recognition task is to be attributed to the RGB information, our proposed two-input network is able to maintain an above-60\% accuracy even at 7 frames at the end of the second stage.
 
 \section{Conclusions}
 
