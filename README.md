@@ -14,6 +14,8 @@ The aim of this project is to perform first person action recognition by leverag
 
 Our method consists in adapting the RGB network proposed in [1] to warped optical flow frames: to perform this operation, we followed a procedure very similar to the one proposed in [2]. The proposed network takes both RGB frames and warped optical flow frames as input data.
 
+For a more in-depth description of the proposed model and the previous works upon which we based ours, please refer to this [report](https://github.com/nick04official/mldl/releases/download/2020.06.29/report.pdf).
+
 ## Run this project
 
 ### System Requirements
