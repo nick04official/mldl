@@ -16,7 +16,7 @@
 % The title of the presentation:
 %  - first a short version which is visible at the bottom of each slide;
 %  - second the full title shown on the title slide;
-\title[FPAR]{First Person\\Action Recognition}
+\title[WFCNet for FPAR]{Aid of WFCNet\\for FPAR Task}
 
 % Optional: a subtitle to be dispalyed on the title slide
 \subtitle{Project Description}
@@ -24,8 +24,7 @@
 % The author(s) of the presentation:
 %  - again first a short version to be displayed at the bottom;
 %  - next the full list of authors, which may include contact information;
-\author[Nicolò Bertozzi, Francesco Bianco Morghet]{
-  Nicolò Bertozzi, Francesco Bianco Morghet} 
+\author[Nicolò Bertozzi, Francesco Bianco Morghet]{Nicolò Bertozzi, Francesco Bianco Morghet} 
   
 %\titlegraphic{\includegraphics[width=\textwidth]{atac-logo}}
 
@@ -42,7 +41,7 @@ Politecnico di Torino}
 %  - again first a short version to be shown at the bottom of each slide
 %  - second the full date and event name for the title slide
 \date[2$^{nd}$ Semester]{
- 2$^{nd}$ Semester | 10 July 2020}
+ 2$^{nd}$ Semester | 13 July 2020}
 
 \providecommand{\di}{\mathop{}\!\mathrm{d}}
 \providecommand*{\der}[3][]{\frac{d\if?#1?\else^{#1}\fi#2}{d #3\if?#1?\else^{#1}\fi}} 
@@ -114,6 +113,18 @@ Solutions:
 \item Deeper neural networks;
 \end{itemize}
 \end{frame}
+
+\section{Dataset}
+
+\begin{frame}
+\frametitle{Overview} 
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+\frametitle{Dataset}
+Dataset
+\end{frame}
       
 \section{Related Works}
 
@@ -145,46 +156,149 @@ Solution:
 \end{frame}
 
 \begin{frame}
-\frametitle{Attention Map}
+\frametitle{Motion Segmentation Task 1/2}
+
+Features:
+\begin{itemize}
+\item Each \textbf{feature map} is forwarded to an \textbf{auxiliary branch} with a convolutional and a FC layer;
+\item \textbf{IDT} as ground truth: image which indicates if a \textbf{pixel is moving or not}, net to the camera motion;
+\item \textbf{Pixel-per-pixel loss} between the predicted motion map and the IDT;
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Motion Segmentation Task 2/2}
+
+Formule
+
+\end{frame}
+
+\begin{frame}
+\frametitle{CAMs Visualizations}
+
+\begin{figure}
+\includegraphics[width=\textwidth]{../schemi/cams_img}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Attention Mechanism 1/2}
+
 Features:
 \begin{itemize}
 \item \textbf{Focusing} the recognition on the \textbf{most important parts} of the video;
 \item \textbf{Discarding} the regions with \textbf{low importance};
 \item The temporal flow information, i.e \textbf{the motion}, \textbf{is not included} in the mechanism;
 \end{itemize}
+
 \end{frame}
 
 \begin{frame}
-\frametitle{Motion Segmentation Task}
-Features:
+\frametitle{Attention Mechanism 2/2}
+
+Formule
+
+\end{frame}
+
+\section{Proposed Methods}
+
+\begin{frame}
+\frametitle{Overview} 
+	\tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+\frametitle{WFCNet 1/2}
+
+\begin{figure}
+\includegraphics[width=\textwidth]{../schemi/colorization_img}
+\end{figure}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{WFCNet 2/2}
+
+Network's composition:
 \begin{itemize}
-\item Each \textbf{feature map} is forwarded to an \textbf{auxiliary branch} with a convolutional and a FC layer;
-\item \textbf{IDT} as ground truth: image which indicates if a \textbf{pixel is moving or not}, net to the camera motion;
-\item \textbf{Pixel-per-pixel} loss between the predicted motion map and the IDT;
+\item \textbf{Macro blocks} execute directly the \textbf{downsampling} or the \textbf{upsampling};
+\item \textbf{Downsampling as convolutional filters} which maintain the pros of residual blocks;
+\item \textbf{Upsampling as neighbour resize} which performs better than transpose convolution;
+\item Finally the \textbf{activation function} with sigmoid and the \textbf{normalisation} with mean and std of ImageNet are applied;
 \end{itemize}
-\end{frame}
-
-\section{Proposed Methods}
-
-\begin{frame}
-\frametitle{Overview} 
-  \tableofcontents[currentsection]
+ 
 \end{frame}
 
 \begin{frame}
+\frametitle{Training WFCNet 1/2}
 
-\section{Proposed Methods}
-
-\begin{frame}
-\frametitle{Overview} 
-  \tableofcontents[currentsection]
+\begin{figure}
+\centering
+\includegraphics[height=0.40\textheight]{../schemi/training_WFC1}
+\end{figure}
+ 
 \end{frame}
-     
-\section{Conclusions}
+
+\begin{frame}
+\frametitle{Training WFCNet 2/2}
+
+\begin{figure}
+\centering
+\includegraphics[height=0.40\textheight]{../schemi/training_WFC2}
+\end{figure}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Single Stream 1/2}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{../schemi/single_stream}
+\end{figure}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Single Stream 2/2}
+
+Basic features:
+\begin{itemize}
+\item A \textbf{WFCNet} to infer \textbf{RGB warp flow} frames;
+\item A \textbf{ResNet}, with an attention mechanism implemented, \textbf{trained on ImageNet};
+\item A \textbf{ConvLSTM} to encode the \textbf{temporal correlations} between the spatial maps; %funziona meglio rispetto alla LSTM perchè 
+\item An \textbf{Average Pooling} layer and a \textbf{FC} layer;
+\item Due to the kind of problem, i.e classification, a \textbf{Cross Entropy Loss is used};
+\end{itemize}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Two Stream 1/2}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{../schemi/two_stream}
+\end{figure}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{Two Stream 2/2}
+
+\begin{itemize}
+\item
+\end{itemize}
+ 
+\end{frame}
+  
+\section{Results}
 
 \begin{frame}
 \frametitle{Overview} 
-  \tableofcontents[currentsection]
+	\tableofcontents[currentsection]
 \end{frame}
      
 \begin{frame}
@@ -215,4 +329,5 @@ FPAR Project | MLDL
 \break
 10 July 2020
 \end{frame}
+
 \end{document}
