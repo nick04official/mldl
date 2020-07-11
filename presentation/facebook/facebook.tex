@@ -12,8 +12,35 @@
 \usepackage{changepage}
 \usepackage{ragged2e}
 
-\setbeamercovered{transparent}
+\makeatletter
+\newcommand{\jtemize}[1][]{%
+	\beamer@ifempty{#1}{}{\def\beamer@defaultospec{#1}}%
+	\ifnum \@itemdepth >2\relax\@toodeep\else
+	\advance\@itemdepth\@ne
+	\beamer@computepref\@itemdepth% sets \beameritemnestingprefix
+	\usebeamerfont{itemize/enumerate \beameritemnestingprefix body}%
+	\usebeamercolor[fg]{itemize/enumerate \beameritemnestingprefix body}%
+	\usebeamertemplate{itemize/enumerate \beameritemnestingprefix body begin}%
+	\list
+	{\usebeamertemplate{itemize \beameritemnestingprefix item}}
+	{\def\makelabel##1{%
+			{%
+				\hss\llap{{%
+						\usebeamerfont*{itemize \beameritemnestingprefix item}%
+						\usebeamercolor[fg]{itemize \beameritemnestingprefix item}##1}}%
+			}%
+		}%
+	}
+	\fi%
+	\beamer@cramped%
+	\justifying% NEW
+	%\raggedright% ORIGINAL
+	\beamer@firstlineitemizeunskip%
+}
+\makeatother
 
+
+\setbeamercovered{transparent}
 
 \usefonttheme{}
 
@@ -52,6 +79,7 @@ Politecnico di Torino}
  \providecommand*{\pder}[3][]{% 
     \frac{\partial\if?#1?\else^{#1}\fi#2}{\partial #3\if?#1?\else^{#1}\fi}% 
   }
+
 \begin{document}
 
 \begin{frame}
@@ -165,15 +193,16 @@ Solutions:
 \begin{columns}
 \column{0.6\textwidth}
 Main characteristics:
-\begin{itemize}
+\begin{jtemize}
 \item \textbf{Two networks} with separate \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from warped optical flow frames;
 \item \textbf{ConvLSTM} in the RGB network to take into account the \textbf{temporal dependencies};
 \item Linear \textbf{classifier} to \textbf{join} the two networks;
-\end{itemize}
+\item[]
+\end{jtemize}
 \column{0.4\textwidth}
 \includegraphics[width=\textwidth]{../schemi/contribution}
 \end{columns}
-q
+\end{frame}
 
 \begin{frame}
 \frametitle{Two Stream Approach 2/2}
