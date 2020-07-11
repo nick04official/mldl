@@ -459,10 +459,10 @@ Solution:
 \end{frame}
 
 \begin{frame}
-\frametitle{Results 1/3}
+\frametitle{Results 1/2}
 
 	{ \footnotesize 
-	\begin{columns}[t]
+	\begin{columns}[c]
 		\begin{column}{.65\textwidth}
 			\begin{itemize}
 				\item RGB Network \\
@@ -478,6 +478,16 @@ Solution:
 					RGB w/ CAM @ 16 & 66.66\% \\
 					RGB w/ NEW A.M. @ 16 & 65.51\% \\
 				\end{tabular}
+			\item RGB Network w/ MS task \\
+			\vspace*{8pt}
+			\begin{tabular}{ll|r}
+				Type & Frames & Best Acc. \\
+				\hline
+				Classification & 7 & 60.34\% \\
+				Classification & 16 & 68.97\% \\
+				Regression & 7 & 61.21\% \\
+				Regression & 16 & 68.10\% \\
+			\end{tabular}
 			\end{itemize}
 		\end{column}
 		\begin{column}{.7\textwidth}
@@ -490,14 +500,6 @@ Solution:
 						1 Stack of 5 & 40.52\% \\
 						5 Stacks of 5 & 48.85\% \\
 					\end{tabular}
-				\end{itemize}
-
-			\end{column}
-	\end{columns}
-	\vspace{12pt}
-	\begin{columns}[b]
-		\begin{column}{.5\textwidth}
-			\begin{itemize}
 				\item Two stream \\
 				\vspace*{8pt}
 				\begin{tabular}{l|r}
@@ -506,34 +508,42 @@ Solution:
 					7 & 68.90\% \\
 					16 & 75\%
 				\end{tabular}
-			\end{itemize}
-		\end{column}
-		
+				\end{itemize}
+			\end{column}
 	\end{columns}
 	}
 
 \end{frame}
 
 \begin{frame}
-	\frametitle{Results 2/3}
+	\frametitle{Results 2/2}
 	
 	{ \footnotesize 
-	\begin{columns}
-		\begin{column}{.75\textwidth}
-			\begin{itemize}
-				\item RGB Network w/ MS task
-				\vspace{8pt}
-				\begin{tabular}{ll|r}
-					Type & Frames & Best Acc. \\
-					\hline
-					Classification & 7 & 60.34\% \\
-					Classification & 16 & 68.97\% \\
-					Regression & 7 & 61.21\% \\
-					Regression & 16 & 68.10\% \\
-				\end{tabular}
-			\end{itemize}
-		\end{column}
-	\end{columns}
+		\begin{columns}[c]
+			\begin{column}{\textwidth}
+				\begin{itemize}
+					\item Single input \\
+					\vspace*{8pt}
+					\begin{tabular}{l|r}
+						Network & Val. Accuracy \\
+						\hline
+						WFCNet single -> RGBNet @ 7 & 26.43\% \\
+						WFCNet single -> RGBNet @ 14 & 28.16\% \\
+						\hline
+						WFCNet stack of 5 -> RGBNet @ 7 & 35.34\% \\
+						WFCNet stack of 5 -> RGBNet @ 14 & 33.04\% \\
+					\end{tabular}
+					\item Two input \\
+					\vspace*{8pt}
+					\begin{tabular}{l|rr}
+						Network & Stage 1 & Stage 2 \\
+						\hline
+						Stack of 5 + RGB @ 7 & 52.58\% & 63.22\% \\
+						Stack of 5 + RGB @ 14 & 60.34\% & 71.83\% \\
+					\end{tabular}
+				\end{itemize}
+			\end{column}
+		\end{columns}
 	}
 	
 \end{frame}
