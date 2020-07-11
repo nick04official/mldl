@@ -37,6 +37,12 @@
 	%\raggedright% ORIGINAL
 	\beamer@firstlineitemizeunskip%
 }
+\def\endjtemize{\ifhmode\unskip\fi\endlist%
+	\usebeamertemplate{itemize/enumerate \beameritemnestingprefix body end}
+	\ifnum \@itemdepth >1
+	\vfil
+	\fi%  
+}
 \makeatother
 
 
@@ -197,7 +203,6 @@ Main characteristics:
 \item \textbf{Two networks} with separate \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from warped optical flow frames;
 \item \textbf{ConvLSTM} in the RGB network to take into account the \textbf{temporal dependencies};
 \item Linear \textbf{classifier} to \textbf{join} the two networks;
-\item[]
 \end{jtemize}
 \column{0.4\textwidth}
 \includegraphics[width=\textwidth]{../schemi/contribution}
