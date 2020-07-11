@@ -8,6 +8,9 @@
 %\usepackage{euler}
 \usepackage{listings}
 
+\usepackage{multirow}
+\usepackage{changepage}
+
 \setbeamercovered{transparent}
 
 
@@ -123,7 +126,30 @@ Solutions:
 
 \begin{frame}
 \frametitle{Dataset}
-Dataset
+
+\begin{columns}[c]
+	\begin{column}{.5\textwidth}
+		GTEA-61:
+		\begin{itemize}
+			\item First person point of view;
+			\item 61 classes of \textit{verb+noun};
+			\item 4 subjects;
+			\item Most clips 1.5s to 4s long.
+		\end{itemize}
+	\end{column}
+	\begin{column}{.5\textwidth}
+		\begin{figure}
+			\includegraphics[width=\textwidth]{../schemi/GTEA61_boxplot.png}
+		\end{figure}
+	\end{column}
+\end{columns}
+
+\vspace{24pt}
+\includegraphics[width=.22\textwidth]{../schemi/frame_1.png} \hfill
+\includegraphics[width=.22\textwidth]{../schemi/frame_2.png} \hfill
+\includegraphics[width=.22\textwidth]{../schemi/frame_3.png} \hfill
+\includegraphics[width=.22\textwidth]{../schemi/frame_4.png}
+
 \end{frame}
       
 \section{Related Works}
@@ -137,9 +163,9 @@ Dataset
 \frametitle{Two Stream Approach 1/2}
 Main characteristics:
 \begin{itemize}
-\item Two \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from flow images;
-\item \textbf{ConvLSTM} to take into account the \textbf{temporal dependencies};
-\item Linear \textbf{classifier} to \textbf{join the networks};
+\item \textbf{Two networks} with separate \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from warped optical flow frames;
+\item \textbf{ConvLSTM} in the RGB network to take into account the \textbf{temporal dependencies};
+\item Linear \textbf{classifier} to \textbf{join} the two networks.
 \end{itemize}
 \end{frame}
 
@@ -149,9 +175,9 @@ Issue:
 \begin{itemize}
 \item The correlation and the \textbf{mutual influence} between motion and appearance information is \textbf{not taken into account};
 \end{itemize}
-Solution:
+Possible solution:
 \begin{itemize}
-\item Implementing a single network accompanied by a \textbf{motion segmentation task};
+\item Implementing a single network with an auxiliary \textbf{self supervised task};
 \end{itemize}
 \end{frame}
 
@@ -169,9 +195,48 @@ Features:
 
 \begin{frame}
 \frametitle{Motion Segmentation Task 2/2}
+\begin{adjustwidth}{-1.75em}{-1.75em}
 
-Formule
 
+\begin{itemize}
+	\item Both tasks are jointly trained by minimising single loss:
+	\begin{center}
+	${\displaystyle {\mathcal{L} = \mathcal{L}_{main} + \alpha \mathcal{L}_{ms} \hspace{10pt} , \hspace{10pt} \alpha \in \Re} }$
+	\end{center}
+	
+	\item Loss of classification task:
+	
+	\begin{center}
+	\begin{tabular}{cr}
+		\multirow{2}{*}{$ {\displaystyle \mathcal{L}_{main} = -\sum_i^N{y_i \log (p(x_i))} }$} 
+		& $y_i = [0 \dots 1 \dots 0]$ \\
+		& $ p(x_i) = \frac{1}{\sum_j e^{f_j}} [ e^{f_0} \dots e^{f_c} ]$
+	\end{tabular}
+	\end{center}
+
+	{\scriptsize $x_i$ sample, $y_i$ label, $f_j$ output neuron for class $j$ }
+
+	\item Loss of motion segmentation task:
+	
+	\begin{minipage}{.6\textwidth}
+		CLF: $ {\displaystyle \mathcal{L}_{ms} = -\sum_i^N\sum_t^T\sum_s^S{m_{i,t,s} \log (l_{i,t,s}) } }$ \\
+		REG: $ {\displaystyle \mathcal{L}_{ms} = -\sum_i^N\sum_t^T\sum_s^S{(m_{i,t,s}' - l_{i,t,s}')^2 } }$
+	\end{minipage}%
+	\begin{minipage}{.4\textwidth}
+		\begin{flushright}
+		${ \scriptstyle m_{i,t,s} \in \{ [1, 0], [0, 1] \} }$ 
+		${ \scriptstyle m_{i,t,s}' \in \{ 0, 1 \} }$
+		${ \scriptstyle l_{i,t,s} = \left [ \frac{e^{f_{s_0}(i, t)}}{\sum_j e^{f_{s_j}(i, t)}}, \frac{e^{f_{s_1}(i, t)}}{\sum_j e^{f_{s_j}(i, t)}} \right ] }$ \\
+		${ \scriptstyle l_{i,t,s}' =  .5 \tanh (f_{s_0}(i, t) + f_{s_1}(i, t)) + 1 }$
+		\end{flushright}
+	\end{minipage}
+
+	{\scriptsize $i$ sample, $t$ time-step, $s$ spatial location, $m$ mmap, $l$ predicted mmap, \\ \vspace*{-5pt} $f_{s_j}$ output neuron for spatial location $s$ and pixel value $j = 0|1$}
+
+	
+\end{itemize}
+
+\end{adjustwidth}
 \end{frame}
 
 \begin{frame}
@@ -190,7 +255,7 @@ Features:
 \begin{itemize}
 \item \textbf{Focusing} the recognition on the \textbf{most important parts} of the video;
 \item \textbf{Discarding} the regions with \textbf{low importance};
-\item The temporal flow information, i.e \textbf{the motion}, \textbf{is not included} in the mechanism;
+%\item The temporal flow information, i.e \textbf{the motion}, \textbf{is not included} in the mechanism; % No questo non vale per il nostro
 \end{itemize}
 
 \end{frame}
@@ -198,7 +263,43 @@ Features:
 \begin{frame}
 \frametitle{Attention Mechanism 2/2}
 
-Formule
+\begin{columns}[t]
+	\begin{column}{0.5\textwidth}
+		Attention mechanism in Ego-RNN:
+		\vspace{6pt}
+		{ \scriptsize
+		\begin{enumerate}
+			\item Find best neuron of hidden fc layer:
+			${{\text{argmax}}_c (\sum_l(\text{avgpool}_i(f_i(l)) \cdot w_l^c) + b^c )}$
+			\item Compute CAM for all spatial locations: 
+			${\text{CAM}_c(i) = \sum_l w_l^c f_l(i)}$
+			\item Compute features with spatial attention: \\
+			$f_{SA} = CAM' \odot f $ \\ $CAM'(i) =  \frac{e^{CAM(i)}}{\sum_i e^{CAM(i)}}$
+		\end{enumerate}
+		}
+	\end{column} %
+	\begin{column}{0.5\textwidth}
+		Proposed simpler attention mechanism:
+		\vspace{6pt}
+		{ \scriptsize
+			\begin{enumerate}
+				\item Compute AM for all spatial locations: 
+				${\text{AM}(i) = \sum_l w_l f_l(i)}$
+				\item Compute features with spatial attention: \\
+				$f_{SA} = AM' \odot f $ \\ $ AM'(i) =  \frac{e^{AM(i)}}{\sum_i e^{AM(i)}}$
+			\end{enumerate}
+		}
+	\end{column}
+\end{columns}
+
+\vfill
+
+{\scriptsize $i$ spatial location index, $l$ output feature map index, $c$ hidden neuron index \\ 
+$f_l(i)$ backbone $l$-th output feature map at spatial location $i$, \\
+$w_l^c$ $l$-th weight of $c$-th neuron, $b^c$ bias of $c$-th neuron, \\  
+\vspace{-4pt}
+$w_l$ $l$-th weight of linear classifier}
+
 
 \end{frame}
 
