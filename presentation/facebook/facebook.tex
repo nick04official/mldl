@@ -134,7 +134,7 @@ Solutions:
 			\item First person point of view;
 			\item 61 classes of \textit{verb+noun};
 			\item 4 subjects;
-			\item Most clips 1.5s to 4s long.
+			\item Most clips 1.5s to 4s long;
 		\end{itemize}
 	\end{column}
 	\begin{column}{.5\textwidth}
@@ -165,7 +165,7 @@ Main characteristics:
 \begin{itemize}
 \item \textbf{Two networks} with separate \textbf{CNNs}: one to \textbf{extract features} from RGB images and one to \textbf{extract features} from warped optical flow frames;
 \item \textbf{ConvLSTM} in the RGB network to take into account the \textbf{temporal dependencies};
-\item Linear \textbf{classifier} to \textbf{join} the two networks.
+\item Linear \textbf{classifier} to \textbf{join} the two networks;
 \end{itemize}
 \end{frame}
 
@@ -227,7 +227,7 @@ Features:
 		${ \scriptstyle m_{i,t,s} \in \{ [1, 0], [0, 1] \} }$ 
 		${ \scriptstyle m_{i,t,s}' \in \{ 0, 1 \} }$
 		${ \scriptstyle l_{i,t,s} = \left [ \frac{e^{f_{s_0}(i, t)}}{\sum_j e^{f_{s_j}(i, t)}}, \frac{e^{f_{s_1}(i, t)}}{\sum_j e^{f_{s_j}(i, t)}} \right ] }$ \\
-		${ \scriptstyle l_{i,t,s}' =  .5 \tanh (f_{s_0}(i, t) + f_{s_1}(i, t)) + 1 }$
+		${ \scriptstyle l_{i,t,s}' =  .5 \tanh (f_{s_0}(i, t) + f_{s_1}(i, t)) + .5 }$
 		\end{flushright}
 	\end{minipage}
 
@@ -400,6 +400,86 @@ Basic features:
 \begin{frame}
 \frametitle{Overview} 
 	\tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+\frametitle{Results 1/3}
+
+	{ \footnotesize 
+	\begin{columns}[t]
+		\begin{column}{.65\textwidth}
+			\begin{itemize}
+				\item RGB Network \\
+				\vspace*{8pt}
+				\begin{tabular}{l|r}
+					Network & Mean Val. Acc. \\
+					\hline
+					RGB w/ NOCAM @ 7 & 54.31\% \\
+					RGB w/ CAM @ 7 & 59.19\% \\
+					RGB w/ NEW A.M. @ 7 & 59.90\% \\
+					\hline
+					RGB w/ NOCAM @ 16 & 56.32\% \\
+					RGB w/ CAM @ 16 & 66.66\% \\
+					RGB w/ NEW A.M. @ 16 & 65.51\% \\
+				\end{tabular}
+			\end{itemize}
+		\end{column}
+		\begin{column}{.7\textwidth}
+				\begin{itemize}
+					\item Temporal Network \\
+					\vspace*{8pt}
+					\begin{tabular}{l|r}
+						& Mean Val. Acc. \\
+						\hline
+						1 Stack of 5 & 40.52\% \\
+						5 Stacks of 5 & 48.85\% \\
+					\end{tabular}
+				\end{itemize}
+
+			\end{column}
+	\end{columns}
+	\vspace{12pt}
+	\begin{columns}[b]
+		\begin{column}{.5\textwidth}
+			\begin{itemize}
+				\item Two stream \\
+				\vspace*{8pt}
+				\begin{tabular}{l|r}
+					Frames & Mean Val. Acc. \\
+					\hline
+					7 & 68.90\% \\
+					16 & 75\%
+				\end{tabular}
+			\end{itemize}
+		\end{column}
+		
+	\end{columns}
+	}
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Results 2/3}
+	
+	{ \footnotesize 
+	\begin{columns}
+		\begin{column}{.75\textwidth}
+			\begin{itemize}
+				\item RGB Network w/ MS task
+				\vspace{8pt}
+				\begin{tabular}{ll|r}
+					Type & Frames & Best Acc. \\
+					\hline
+					Classification & 7 & 60.34\% \\
+					Classification & 16 & 68.97\% \\
+					Regression & 7 & 61.21\% \\
+					Regression & 16 & 68.10\% \\
+				\end{tabular}
+			\end{itemize}
+		\end{column}
+	\end{columns}
+	}
+	
 \end{frame}
      
 \begin{frame}
