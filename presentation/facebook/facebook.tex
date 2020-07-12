@@ -353,15 +353,6 @@ $w_l$ $l$-th weight of linear classifier}
 \begin{frame}
 \frametitle{WFCNet 1/2}
 
-\begin{figure}
-\includegraphics[width=\textwidth]{../schemi/wfcnet_esploso}
-\end{figure}
- 
-\end{frame}
-
-\begin{frame}
-\frametitle{WFCNet 2/2}
-
 Network's composition:
 \begin{itemize}
 \item \textbf{Resnet-like architecture};
@@ -370,6 +361,15 @@ Network's composition:
 \item \textbf{Upsampling as neighbour resize} which performs better than transpose convolution;
 \item Finally the \textbf{activation function} with sigmoid and the \textbf{normalisation} with mean and std of ImageNet are applied;
 \end{itemize}
+ 
+\end{frame}
+
+\begin{frame}
+\frametitle{WFCNet 2/2}
+
+\begin{figure}
+\includegraphics[width=\textwidth]{../schemi/wfcnet_esploso}
+\end{figure}
  
 \end{frame}
 
@@ -406,16 +406,6 @@ Network's composition:
 \begin{frame}
 \frametitle{Single Input 1/2}
 
-\begin{figure}
-\centering
-\includegraphics[width=\textwidth]{../schemi/single_stream}
-\end{figure}
- 
-\end{frame}
-
-\begin{frame}
-\frametitle{Single Input 2/2}
-
 Basic features:
 \begin{itemize}
 \item A \textbf{WFCNet} to infer \textbf{RGB warp flow} frames;
@@ -428,17 +418,17 @@ Basic features:
 \end{frame}
 
 \begin{frame}
-\frametitle{Two Input 1/2}
+\frametitle{Single Input 2/2}
 
 \begin{figure}
 \centering
-\includegraphics[width=\textwidth]{../schemi/two_stream_img}
+\includegraphics[width=\textwidth]{../schemi/single_stream}
 \end{figure}
  
 \end{frame}
 
 \begin{frame}
-\frametitle{Two Input 2/2}
+\frametitle{Two Input 1/2}
 Limitations of single input:
 \begin{itemize}
 \item \textbf{The warp flow alone is not sufficient} to achieve high results;
@@ -448,8 +438,19 @@ Limitations of single input:
 
 Solution:
 \begin{itemize}
-\item \textbf{Analyze both} warp flow and RGB frames;
+\item \textbf{Analyze both} warp flow and RGB frames
+\item \textbf{Unique backbone} with \textbf{two attention mechanisms}, one for warp flow and one for RBG;
 \end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Two Input 2/2}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{../schemi/two_stream_img}
+\end{figure}
+ 
 \end{frame}
   
 \section{Results}
